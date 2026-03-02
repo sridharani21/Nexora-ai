@@ -1,3 +1,4 @@
+
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -63,6 +64,14 @@ const Header = async () => {
                                         <span>Interview Prep</span>
                                     </Link>
                                 </DropdownMenuItem>
+
+ <DropdownMenuItem>
+                                    <Link href={"/jobrecommendation"} className="flex items-center gap-2">
+                                        <GraduationCap className="h-4 w-4" />
+                                        <span>Job rec</span>
+                                    </Link>
+                                </DropdownMenuItem>
+
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SignedIn>
