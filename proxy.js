@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -8,17 +9,24 @@ const isProtectedRoute = createRouteMatcher([
   "/onboarding(.*)",
   "/chat(.*)",
   "/career-chat(.*)",
-  "/course-recommend(.*)",
+  "/course-recommendations(.*)",
+  "/roadmap(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+export default clerkMiddleware((auth, req) => {
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    const { userId } = auth();
+
+    if (!userId) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
   }
+
+  return NextResponse.next();
 });
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)).*)",
-  ],
+  matcher: ["/((?!_next|.*\\..*).*)"],
 };
