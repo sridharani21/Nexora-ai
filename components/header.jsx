@@ -4,12 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { Button } from './ui/button'
-import { ChevronDown, FileText, GraduationCap, LayoutDashboard, PenBox, StarsIcon } from 'lucide-react'
+import { ChevronDown, FileText, GraduationCap, LayoutDashboard, MessageSquare, PenBox, StarsIcon } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { checkUser } from '@/lib/CheckUser'
 
+
 const Header = async () => {
-    await checkUser();
+    try { await checkUser(); } catch (e) {}
     return (
         <header className="fixed top-0 w-full border-b bg-background/80 backdrop-blur-md z-50 supports-[backdrop-filter]:bg-background/60 ">
             <nav className="container mx-auto px-4 h-16 flex items-center justify-between  ">
@@ -66,14 +67,29 @@ const Header = async () => {
                                 </DropdownMenuItem>
 
  <DropdownMenuItem>
-                                    <Link href={"/jobrecommendation"} className="flex items-center gap-2">
+                                    <Link href={"/roadmap"} className="flex items-center gap-2">
                                         <GraduationCap className="h-4 w-4" />
-                                        <span>Job rec</span>
+                                        <span>RoadMap Gen</span>
+                                    </Link>
+                                </DropdownMenuItem>
+
+                                 <DropdownMenuItem>
+                                    <Link href={"/course-recommendations"} className="flex items-center gap-2">
+                                        <GraduationCap className="h-4 w-4" />
+                                        <span>Course Rec</span>
                                     </Link>
                                 </DropdownMenuItem>
 
                             </DropdownMenuContent>
                         </DropdownMenu>
+                       <Link href={"/career-chat"}>
+  <Button variant="outline">
+    <MessageSquare className="h-4 w-4" /> {/* Chatbot icon */}
+    <span className="hidden md:block">
+      Chat
+    </span>
+  </Button>
+</Link>
                     </SignedIn>
 
                     <SignedOut>

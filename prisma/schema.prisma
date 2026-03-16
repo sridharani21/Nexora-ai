@@ -25,6 +25,9 @@ model User {
   industryInsight IndustryInsight? @relation(fields: [industry], references: [industry])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  courseRecommendations CourseRecommendation[]
+
+
 
   // Profile fields
   bio           String?
@@ -106,6 +109,73 @@ model IndustryInsight {
   @@index([industry])
 }
 
+// ADD these models to your existing schema.prisma
+
+model ChatSession {
+  id         String    @id @default(cuid())
+  userId     String
+  title      String    @default("New Chat")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  messages   Message[]
+  resumeText String?   @db.Text  // ← ADD THIS (extracted resume text)
+
+  @@index([userId])
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  sessionId String
+  role      String      // "user" | "assistant"
+  content   String      @db.Text
+  createdAt DateTime    @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?  @db.Text
+  status      String   @default("active")  // "active" | "completed" | "paused"
+  targetDate  DateTime?
+  progress    Int      @default(0)         // 0-100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  skills      String[] @default([])
+  interests   String[] @default([])
+  education   String?
+  experience  String?
+  targetRole  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+//course recommendation
+
+model CourseRecommendation {
+  id        String   @id @default(cuid())
+  userId    String
+  domain    String
+  skills    String[]
+  resumeText String?
+  courses   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 enum DemandLevel {
   HIGH 
   MEDIUM 
@@ -117,3 +187,4 @@ enum MarketOutlook {
   NEUTRAL 
   NEGATIVE 
 }
+
