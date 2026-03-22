@@ -27,8 +27,6 @@ model User {
   updatedAt     DateTime  @updatedAt
   courseRecommendations CourseRecommendation[]
 
-
-
   // Profile fields
   bio           String?
   experience    Int?      // Years of experience
@@ -36,8 +34,9 @@ model User {
   // Relations
   skills        String[]  // Array of skills
   assessments   Assessment[]
-  resume        Resume?
+  resumes       Resume[]   // FIXED: Changed from 'resume Resume?' to 'resumes Resume[]'
   coverLetter   CoverLetter[]
+  roadmaps  Roadmap[]
 }
 
 model Assessment {
@@ -52,17 +51,6 @@ model Assessment {
   updatedAt     DateTime  @updatedAt
 
   @@index([userId])
-}
-
-model Resume {
-  id          String    @id @default(cuid())
-  userId      String    @unique    // One resume per user
-  user        User      @relation(fields: [userId], references: [id])
-  content     String    @db.Text // Markdown content
-  atsScore    Float?
-  feedback    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
 
 model CoverLetter {
@@ -109,8 +97,6 @@ model IndustryInsight {
   @@index([industry])
 }
 
-// ADD these models to your existing schema.prisma
-
 model ChatSession {
   id         String    @id @default(cuid())
   userId     String
@@ -118,7 +104,7 @@ model ChatSession {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   messages   Message[]
-  resumeText String?   @db.Text  // ← ADD THIS (extracted resume text)
+  resumeText String?   @db.Text
 
   @@index([userId])
 }
@@ -160,9 +146,6 @@ model UserProfile {
   updatedAt   DateTime @updatedAt
 }
 
-
-//course recommendation
-
 model CourseRecommendation {
   id        String   @id @default(cuid())
   userId    String
@@ -176,6 +159,175 @@ model CourseRecommendation {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// RESUME BUILDER MODELS
+
+model Resume {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  template    String   @default("modern") // modern, classic, minimal, professional
+  
+  // Personal Information
+  fullName    String
+  email       String
+  phone       String
+  location    String?
+  linkedin    String?
+  portfolio   String?
+  github      String?
+  summary     String?
+  
+  // Resume Content
+  experiences Experience[]
+  education   Education[]
+  skills      Skill[]
+  projects    Project[]
+  certifications Certification[]
+  
+  // ATS Analysis
+  atsScore    Int?
+  atsAnalysis Json?
+  lastAnalyzedAt DateTime?
+  
+  // Metadata
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@map("resumes")
+}
+ 
+model Experience {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  company     String
+  position    String
+  location    String?
+  startDate   String
+  endDate     String?
+  current     Boolean  @default(false)
+  description String[] // Array of bullet points
+  
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([resumeId])
+  @@map("experiences")
+}
+ 
+model Education {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  institution String
+  degree      String
+  field       String
+  location    String?
+  startDate   String
+  endDate     String?
+  gpa         String?
+  achievements String[]
+  
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([resumeId])
+  @@map("education")
+}
+ 
+model Skill {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  category    String   // Technical, Soft Skills, Languages, Tools, etc.
+  name        String
+  level       String?  // Beginner, Intermediate, Expert
+  
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  @@index([resumeId])
+  @@map("skills")
+}
+ 
+model Project {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String
+  technologies String[]
+  link        String?
+  github      String?
+  startDate   String?
+  endDate     String?
+  highlights  String[]
+  
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([resumeId])
+  @@map("projects")
+}
+ 
+model Certification {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  name        String
+  issuer      String
+  issueDate   String
+  expiryDate  String?
+  credentialId String?
+  credentialUrl String?
+  
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  @@index([resumeId])
+  @@map("certifications")
+}
+ 
+model ATSAnalysisHistory {
+  id          String   @id @default(cuid())
+  resumeId    String
+  
+  score       Int
+  analysis    Json
+  recommendations Json
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([resumeId])
+  @@map("ats_analysis_history")
+}
+
+model Roadmap {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  career    String
+  months    Int
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@index([userId])
+}
+
 enum DemandLevel {
   HIGH 
   MEDIUM 
@@ -187,4 +339,3 @@ enum MarketOutlook {
   NEUTRAL 
   NEGATIVE 
 }
-

@@ -4,30 +4,57 @@ import { inngest } from "@/lib/inngest/client";
 import { db } from "@/lib/prisma";
 
 // Helper to find DB user from Clerk userId
+// async function getDbUser(clerkUserId) {
+//   // Tries common field names used for Clerk ID
+//   let user = null;
+
+//   try {
+//     user = await db.user.findUnique({
+//       where: { clerkUserId: clerkUserId },
+//     });
+//   } catch {}
+
+//   if (!user) {
+//     try {
+//       user = await db.user.findUnique({
+//         where: { clerkId: clerkUserId },
+//       });
+//     } catch {}
+//   }
+
+//   if (!user) {
+//     try {
+//       user = await db.user.findFirst({
+//         where: { id: clerkUserId },
+//       });
+//     } catch {}
+//   }
+
+//   return user;
+// }
+
+// Helper to find DB user from Clerk userId
 async function getDbUser(clerkUserId) {
-  // Tries common field names used for Clerk ID
   let user = null;
 
+  // Try clerkUserId first (this is what your schema has)
   try {
     user = await db.user.findUnique({
       where: { clerkUserId: clerkUserId },
     });
-  } catch {}
-
-  if (!user) {
-    try {
-      user = await db.user.findUnique({
-        where: { clerkId: clerkUserId },
-      });
-    } catch {}
+  } catch (error) {
+    console.error("Error finding user by clerkUserId:", error);
   }
 
+  // Fallback to id field if needed
   if (!user) {
     try {
       user = await db.user.findFirst({
         where: { id: clerkUserId },
       });
-    } catch {}
+    } catch (error) {
+      console.error("Error finding user by id:", error);
+    }
   }
 
   return user;
