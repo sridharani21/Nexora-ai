@@ -108,6 +108,7 @@ const NAV_ITEMS = [
   { icon: RoadmapIcon, label: "Roadmap Generator", href: "/roadmap", highlight: true },
 ];
 
+/* ─── icons ──────────────────────────────────────────────────────── */
 function HomeIcon() {
   return <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M7 18v-6h6v6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>;
 }
@@ -122,6 +123,164 @@ function MenuIcon() {
 }
 function CloseIcon() {
   return <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+}
+/* Bottom nav icons */
+function ChatBubbleIcon({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} strokeLinecap="round" strokeLinejoin="round" fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+    </svg>
+  );
+}
+function ClockHistoryIcon({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+      <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} strokeLinecap="round"/>
+    </svg>
+  );
+}
+function ModeIcon({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+      <rect x="13" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+      <rect x="3" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+      <rect x="13" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+    </svg>
+  );
+}
+function PlusNewIcon({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} fill={active ? "rgba(139,92,246,0.2)" : "none"}/>
+      <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth={active ? "2" : "1.5"} strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+/* ─── Mobile bottom sheet panels ────────────────────────────────── */
+function HistoryPanel({ sessions, grouped, activeSession, sessionsLoading, confirmDelete, editingId, editTitle, setEditTitle, setEditingId, searchQuery, setSearchQuery, switchSession, startRename, saveRename, handleRenameKey, deleteSession, setConfirmDelete, editInputRef, newChat, onClose }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>Chat History</p>
+        <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: 4 }}><CloseIcon /></button>
+      </div>
+
+      {/* New chat button */}
+      <div style={{ padding: "12px 14px 8px" }}>
+        <button onClick={() => { newChat(); onClose(); }}
+          style={{ width: "100%", padding: "10px", borderRadius: 10, background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)", color: "#a78bfa", fontSize: 13, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'DM Sans',sans-serif" }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          New conversation
+        </button>
+      </div>
+
+      {/* Search */}
+      <div style={{ padding: "0 14px 10px" }}>
+        <div style={{ position: "relative" }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#475569", pointerEvents: "none" }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5"/><path d="M10 10l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </span>
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search chats"
+            style={{ width: "100%", padding: "9px 12px 9px 30px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, color: "#94a3b8", fontSize: 13, outline: "none", fontFamily: "'DM Sans',sans-serif" }}
+            onFocus={(e) => e.target.style.borderColor = "rgba(139,92,246,0.4)"}
+            onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
+          />
+        </div>
+      </div>
+
+      {/* Session list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 14px 14px" }}>
+        {sessionsLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", paddingTop: 30 }}>
+            <span style={{ width: 18, height: 18, border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "#7c3aed", borderRadius: "50%", display: "inline-block", animation: "nspin 0.8s linear infinite" }} />
+          </div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <p style={{ fontSize: 13, color: "#475569", textAlign: "center", paddingTop: 20 }}>{searchQuery ? "No chats match." : "No chats yet. Start one!"}</p>
+        ) : (
+          Object.entries(grouped).map(([label, group]) => (
+            <div key={label} style={{ marginBottom: 16 }}>
+              <p style={{ margin: "0 0 6px 2px", fontSize: 11, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</p>
+              {group.map((s) => (
+                <div key={s.id} style={{ marginBottom: 4 }}>
+                  {confirmDelete === s.id ? (
+                    <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                      <p style={{ fontSize: 12, color: "#f87171", margin: "0 0 8px" }}>Delete this chat?</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => deleteSession(s.id)} style={{ padding: "5px 14px", fontSize: 11, background: "#ef4444", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer" }}>Delete</button>
+                        <button onClick={() => setConfirmDelete(null)} style={{ padding: "5px 14px", fontSize: 11, background: "rgba(255,255,255,0.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, cursor: "pointer" }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : editingId === s.id ? (
+                    <div style={{ padding: "4px 2px" }}>
+                      <input ref={editInputRef} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => handleRenameKey(e, s.id)} onBlur={() => saveRename(s.id)}
+                        style={{ width: "100%", fontSize: 13, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(139,92,246,0.5)", background: "rgba(139,92,246,0.1)", color: "#e2e8f0", outline: "none", fontFamily: "'DM Sans',sans-serif" }} />
+                      <p style={{ fontSize: 11, color: "#475569", margin: "4px 0 0 2px" }}>Enter to save · Esc to cancel</p>
+                    </div>
+                  ) : (
+                    <button onClick={() => { switchSession(s); onClose(); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", transition: "all 0.15s", background: activeSession?.id === s.id ? "rgba(139,92,246,0.12)" : "rgba(255,255,255,0.03)", color: activeSession?.id === s.id ? "#c4b5fd" : "#94a3b8", outline: activeSession?.id === s.id ? "1px solid rgba(139,92,246,0.2)" : "1px solid rgba(255,255,255,0.06)", fontFamily: "'DM Sans',sans-serif" }}>
+                      {s.resumeText && <span style={{ fontSize: 12, color: "#7c3aed", flexShrink: 0 }}>📎</span>}
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: activeSession?.id === s.id ? 600 : 400 }}>{s.title}</span>
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        <span onClick={(e) => startRename(s, e)}
+                          style={{ width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, cursor: "pointer", color: "#475569", background: "rgba(255,255,255,0.04)" }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}>
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                        <span onClick={(e) => { e.stopPropagation(); setConfirmDelete(s.id); }}
+                          style={{ width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, cursor: "pointer", color: "#475569", background: "rgba(255,255,255,0.04)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.15)"; e.currentTarget.style.color = "#f87171"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "#475569"; }}>
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M4.5 3v6M7.5 3v6M3 3l.5 7h5L9 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModePanel({ mode, setMode, onClose }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>Select Mode</p>
+        <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: 4 }}><CloseIcon /></button>
+      </div>
+      <div style={{ padding: "14px" }}>
+        {MODES.map((m) => {
+          const active = mode === m.id;
+          return (
+            <button key={m.id} onClick={() => { setMode(m.id); onClose(); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, marginBottom: 8, border: "none", cursor: "pointer", fontSize: 14, textAlign: "left", background: active ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.04)", color: active ? "#a78bfa" : "#94a3b8", outline: active ? "1px solid rgba(139,92,246,0.3)" : "1px solid rgba(255,255,255,0.06)", fontFamily: "'DM Sans',sans-serif", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 20, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: active ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.06)" }}>{m.icon}</span>
+              <div>
+                <p style={{ margin: 0, fontWeight: active ? 600 : 400, color: active ? "#c4b5fd" : "#e2e8f0" }}>{m.label}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>
+                  {m.id === "default"   ? "Career paths, skills & advice" :
+                   m.id === "resume"    ? "Review & improve your resume" :
+                   m.id === "skillgap"  ? "Find skills you need to learn" :
+                   "Practice interview questions"}
+                </p>
+              </div>
+              {active && <span style={{ marginLeft: "auto", fontSize: 16, color: "#7c3aed" }}>✓</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 /* ─── main component ─────────────────────────────────────────────── */
@@ -143,16 +302,18 @@ export default function CareerChatbot({ userInfo }) {
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [confirmDelete, setConfirmDelete]     = useState(null);
   const [searchQuery, setSearchQuery]         = useState("");
-  const [sidebarOpen, setSidebarOpen]         = useState(false); // mobile drawer
+  const [sidebarOpen, setSidebarOpen]         = useState(false);
+
+  // Mobile bottom sheet state: null | "history" | "mode"
+  const [mobilePanel, setMobilePanel]         = useState(null);
 
   const bottomRef    = useRef(null);
   const textareaRef  = useRef(null);
   const fileInputRef = useRef(null);
   const editInputRef = useRef(null);
 
-  /* ── responsive breakpoint ──────────────────────────────────── */
-  const [isMobile, setIsMobile]   = useState(false);
-  const [isTablet, setIsTablet]   = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   useEffect(() => {
     const check = () => {
@@ -164,10 +325,8 @@ export default function CareerChatbot({ userInfo }) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Close sidebar on route change (mobile)
-  useEffect(() => { setSidebarOpen(false); }, [pathname]);
+  useEffect(() => { setSidebarOpen(false); setMobilePanel(null); }, [pathname]);
 
-  /* ── load sessions ──────────────────────────────────────────── */
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true);
     try {
@@ -196,7 +355,6 @@ export default function CareerChatbot({ userInfo }) {
   }, [input]);
   useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
 
-  /* ── new chat ────────────────────────────────────────────────── */
   const newChat = async () => {
     try {
       const res  = await fetch("/api/career-chat-sessions", {
@@ -226,7 +384,6 @@ export default function CareerChatbot({ userInfo }) {
     if (isMobile) setSidebarOpen(false);
   };
 
-  /* ── send ────────────────────────────────────────────────────── */
   const send = async (text) => {
     const content = (text || input).trim();
     if (!content || loading) return;
@@ -268,11 +425,8 @@ export default function CareerChatbot({ userInfo }) {
     } finally { setLoading(false); }
   };
 
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
-  };
+  const handleKey = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
 
-  /* ── rename ─────────────────────────────────────────────────── */
   const startRename = (session, e) => { e.stopPropagation(); setEditingId(session.id); setEditTitle(session.title); };
   const saveRename  = async (sessionId) => {
     if (!editTitle.trim()) { setEditingId(null); return; }
@@ -288,7 +442,6 @@ export default function CareerChatbot({ userInfo }) {
   };
   const handleRenameKey = (e, sid) => { if (e.key === "Enter") saveRename(sid); if (e.key === "Escape") setEditingId(null); };
 
-  /* ── delete ─────────────────────────────────────────────────── */
   const deleteSession = async (sessionId) => {
     try {
       await fetch(`/api/career-chat-sessions/${sessionId}`, { method: "DELETE" });
@@ -302,7 +455,6 @@ export default function CareerChatbot({ userInfo }) {
     finally { setConfirmDelete(null); }
   };
 
-  /* ── upload ─────────────────────────────────────────────────── */
   const handleUploadClick = async () => {
     if (!activeSession) { const s = await newChat(); if (s) setTimeout(() => fileInputRef.current?.click(), 100); return; }
     fileInputRef.current?.click();
@@ -331,7 +483,6 @@ export default function CareerChatbot({ userInfo }) {
     finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
 
-  /* ── derived ─────────────────────────────────────────────────── */
   const chips   = SUGGESTIONS[mode] || SUGGESTIONS.default;
   const isEmpty = messages.length === 0;
   const filteredSessions = sessions.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -346,18 +497,15 @@ export default function CareerChatbot({ userInfo }) {
   }, {});
   const greeting = new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening";
 
-  // Responsive sidebar width
-  const sidebarWidth = isTablet ? 220 : 268;
-  // Show sidebar: always on desktop, drawer on mobile/tablet
+  const sidebarWidth      = isTablet ? 220 : 268;
   const showSidebarInline = !isMobile && !isTablet;
-  // Message padding
-  const msgPadding = isMobile ? "16px 4%" : isTablet ? "20px 6%" : "20px 10%";
-  const inputPadding = isMobile ? "10px 4%" : isTablet ? "12px 6%" : "14px 12%";
+  const msgPadding        = isMobile ? "16px 4%" : isTablet ? "20px 6%" : "20px 10%";
+  const inputPadding      = isMobile ? "10px 4%" : isTablet ? "12px 6%" : "14px 12%";
+  const BOTTOM_NAV_H      = (isMobile || isTablet) ? 60 : 0;
 
-  /* ─── Sidebar content (shared between inline and drawer) ─────── */
+  /* ─── Sidebar content ────────────────────────────────────────── */
   const SidebarContent = () => (
     <>
-      {/* Logo */}
       <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif", boxShadow: "0 0 14px rgba(124,58,237,0.35)" }}>N</div>
@@ -366,15 +514,11 @@ export default function CareerChatbot({ userInfo }) {
             <p style={{ margin: 0, fontSize: 9, color: "#475569", letterSpacing: "0.06em" }}>CAREER ASSISTANT</p>
           </div>
         </div>
-        {/* Close button on mobile/tablet */}
         {(isMobile || isTablet) && (
-          <button onClick={() => setSidebarOpen(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: 4 }}>
-            <CloseIcon />
-          </button>
+          <button onClick={() => setSidebarOpen(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: 4 }}><CloseIcon /></button>
         )}
       </div>
 
-      {/* Nav */}
       <div style={{ padding: "10px 10px 0" }}>
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
@@ -393,7 +537,6 @@ export default function CareerChatbot({ userInfo }) {
 
       <div style={{ margin: "10px 14px", borderTop: "1px solid rgba(255,255,255,0.05)" }} />
 
-      {/* Search */}
       <div style={{ padding: "0 10px 10px" }}>
         <div style={{ position: "relative" }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#475569", pointerEvents: "none" }}>
@@ -407,7 +550,6 @@ export default function CareerChatbot({ userInfo }) {
         </div>
       </div>
 
-      {/* Mode */}
       <div style={{ padding: "0 10px 4px" }}>
         <p style={{ margin: "0 0 6px 4px", fontSize: 10, color: "#475569", letterSpacing: "0.08em", textTransform: "uppercase" }}>Mode</p>
         {MODES.map((m) => {
@@ -421,7 +563,6 @@ export default function CareerChatbot({ userInfo }) {
         })}
       </div>
 
-      {/* History */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px 0", minHeight: 0 }}>
         {sessionsLoading ? (
           <div style={{ display: "flex", justifyContent: "center", paddingTop: 20 }}>
@@ -455,10 +596,10 @@ export default function CareerChatbot({ userInfo }) {
                       {s.resumeText && <span style={{ fontSize: 10, color: "#7c3aed", flexShrink: 0 }}>📎</span>}
                       <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
                       <span className="ncc-session-actions" style={{ display: "flex", gap: 2, opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
-                        <span onClick={(e) => startRename(s, e)} title="Rename" style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, cursor: "pointer", color: "#64748b" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#94a3b8"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; }}>
+                        <span onClick={(e) => startRename(s, e)} style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, cursor: "pointer", color: "#64748b" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                           <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </span>
-                        <span onClick={(e) => { e.stopPropagation(); setConfirmDelete(s.id); }} title="Delete" style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, cursor: "pointer", color: "#64748b" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#f87171"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; }}>
+                        <span onClick={(e) => { e.stopPropagation(); setConfirmDelete(s.id); }} style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, cursor: "pointer", color: "#64748b" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#f87171"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; }}>
                           <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M4.5 3v6M7.5 3v6M3 3l.5 7h5L9 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </span>
                       </span>
@@ -471,7 +612,6 @@ export default function CareerChatbot({ userInfo }) {
         )}
       </div>
 
-      {/* Bottom */}
       <div style={{ padding: "10px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <button onClick={newChat} className="ncc-newchat" style={{ width: "100%", padding: "9px", borderRadius: 9, marginBottom: 10, background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)", color: "#a78bfa", fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.2s", fontFamily: "'DM Sans',sans-serif" }}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -503,6 +643,7 @@ export default function CareerChatbot({ userInfo }) {
         @keyframes nfadeUp    { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes nlivepulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes nslideIn   { from{transform:translateX(-100%)} to{transform:translateX(0)} }
+        @keyframes nslideUp   { from{transform:translateY(100%)} to{transform:translateY(0)} }
         .ncc * { box-sizing: border-box; }
         .ncc ::-webkit-scrollbar { width: 3px; }
         .ncc ::-webkit-scrollbar-track { background: transparent; }
@@ -523,158 +664,238 @@ export default function CareerChatbot({ userInfo }) {
         .ncc-msg { animation: nfadeUp 0.28s ease forwards; }
         .ncc-newchat:hover { background: rgba(139,92,246,0.22) !important; }
         .ncc-input-wrap:focus-within { border-color: rgba(139,92,246,0.45) !important; }
-        .ncc-drawer { animation: nslideIn 0.25s ease; }
+        .ncc-drawer  { animation: nslideIn 0.25s ease; }
+        .ncc-sheet   { animation: nslideUp 0.28s ease; }
         .ncc-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 40; backdrop-filter: blur(2px); }
+        .ncc-bnav-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 12px; border-radius: 10px; transition: all 0.18s; flex: 1; }
+        .ncc-bnav-btn:hover { background: rgba(255,255,255,0.04); }
+        .ncc-bnav-btn.active { background: rgba(139,92,246,0.12); }
       `}</style>
 
-      <div className="ncc" style={{ display: "flex", height: "100dvh", width: "100vw", maxHeight: "100dvh", background: "#09090f", fontFamily: "'DM Sans', sans-serif", color: "#e2e8f0", overflow: "hidden", position: "relative" }}>
+      <div className="ncc" style={{ display: "flex", height: "100dvh", width: "100vw", maxHeight: "100dvh", background: "#09090f", fontFamily: "'DM Sans', sans-serif", color: "#e2e8f0", overflow: "hidden", position: "relative", flexDirection: "column" }}>
 
-        {/* ── Mobile/Tablet overlay ──────────────────────────── */}
-        {(isMobile || isTablet) && sidebarOpen && (
-          <div className="ncc-overlay" onClick={() => setSidebarOpen(false)} />
+        {/* ── Overlays ─────────────────────────────────────────── */}
+        {(sidebarOpen || mobilePanel) && (
+          <div className="ncc-overlay" onClick={() => { setSidebarOpen(false); setMobilePanel(null); }} />
         )}
 
-        {/* ══ SIDEBAR — inline on desktop, drawer on mobile/tablet ═ */}
-        {showSidebarInline ? (
-          <aside style={{ width: sidebarWidth, minWidth: sidebarWidth, display: "flex", flexDirection: "column", background: "#0d0d16", borderRight: "1px solid rgba(255,255,255,0.06)", height: "100dvh", overflow: "hidden" }}>
-            <SidebarContent />
-          </aside>
-        ) : (
-          sidebarOpen && (
+        {/* Main row */}
+        <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+
+          {/* ══ SIDEBAR — desktop inline ════════════════════════ */}
+          {showSidebarInline && (
+            <aside style={{ width: sidebarWidth, minWidth: sidebarWidth, display: "flex", flexDirection: "column", background: "#0d0d16", borderRight: "1px solid rgba(255,255,255,0.06)", height: "100%", overflow: "hidden" }}>
+              <SidebarContent />
+            </aside>
+          )}
+
+          {/* ══ SIDEBAR — mobile/tablet drawer ══════════════════ */}
+          {!showSidebarInline && sidebarOpen && (
             <aside className="ncc-drawer" style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: sidebarWidth, display: "flex", flexDirection: "column", background: "#0d0d16", borderRight: "1px solid rgba(255,255,255,0.06)", zIndex: 50, height: "100dvh", overflow: "hidden" }}>
               <SidebarContent />
             </aside>
-          )
-        )}
+          )}
 
-        {/* ══ MAIN PANEL ════════════════════════════════════════ */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, position: "relative", background: "#09090f" }}>
+          {/* ══ MAIN PANEL ══════════════════════════════════════ */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, position: "relative", background: "#09090f" }}>
 
-          <div style={{ position: "absolute", top: "15%", left: "50%", transform: "translateX(-50%)", width: isMobile ? 300 : 600, height: isMobile ? 300 : 600, borderRadius: "50%", pointerEvents: "none", zIndex: 0, background: "radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 65%)" }} />
+            <div style={{ position: "absolute", top: "15%", left: "50%", transform: "translateX(-50%)", width: isMobile ? 280 : 600, height: isMobile ? 280 : 600, borderRadius: "50%", pointerEvents: "none", zIndex: 0, background: "radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 65%)" }} />
 
-          {/* Topbar */}
-          <div style={{ padding: isMobile ? "10px 14px" : "12px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(13,13,22,0.85)", backdropFilter: "blur(12px)", position: "relative", zIndex: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* Hamburger on mobile/tablet */}
-              {(isMobile || isTablet) && (
-                <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginRight: 4 }}>
-                  <MenuIcon />
-                </button>
-              )}
-              <div style={{ padding: "5px 10px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 6, fontSize: isMobile ? 11 : 12, color: "#94a3b8", maxWidth: isMobile ? 160 : "none", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                <span>{MODES.find((m) => m.id === mode)?.icon}</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {activeSession?.title || MODES.find((m) => m.id === mode)?.label}
+            {/* Topbar */}
+            <div style={{ padding: isMobile ? "10px 14px" : "12px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(13,13,22,0.9)", backdropFilter: "blur(12px)", position: "relative", zIndex: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {(isMobile || isTablet) && (
+                  <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginRight: 4 }}>
+                    <MenuIcon />
+                  </button>
+                )}
+                <div style={{ padding: "5px 10px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 6, fontSize: isMobile ? 11 : 12, color: "#94a3b8", maxWidth: isMobile ? 150 : "none", overflow: "hidden", whiteSpace: "nowrap" }}>
+                  <span>{MODES.find((m) => m.id === mode)?.icon}</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{activeSession?.title || MODES.find((m) => m.id === mode)?.label}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {!isMobile && <span style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500, background: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.22)" }}>AI Powered</span>}
+                <span style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, fontSize: 11, background: "rgba(16,185,129,0.08)", color: "#34d399", border: "1px solid rgba(16,185,129,0.18)" }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981", display: "inline-block", animation: "nlivepulse 2s infinite" }} />
+                  {!isMobile && "Live"}
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {!isMobile && (
-                <span style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500, background: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.22)" }}>AI Powered</span>
-              )}
-              <span style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, fontSize: 11, background: "rgba(16,185,129,0.08)", color: "#34d399", border: "1px solid rgba(16,185,129,0.18)" }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981", display: "inline-block", animation: "nlivepulse 2s infinite" }} />
-                {!isMobile && "Live"}
-              </span>
-            </div>
-          </div>
 
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: "auto", padding: msgPadding, display: "flex", flexDirection: "column", gap: 16, position: "relative", zIndex: 1 }}>
-            {isEmpty && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, textAlign: "center", animation: "nfadeUp 0.5s ease", padding: "20px 0" }}>
-                <NexoraLogo />
-                <h1 style={{ margin: "0 0 8px", fontSize: isMobile ? 22 : isTablet ? 26 : 30, fontWeight: 700, color: "#f1f5f9", fontFamily: "'Syne',sans-serif", letterSpacing: "-0.03em" }}>
-                  Good {greeting}, {userInfo?.name || "there"}.
-                </h1>
-                <p style={{ margin: "0 0 24px", fontSize: isMobile ? 14 : 17, color: "#64748b", fontWeight: 300 }}>
-                  Can I help you navigate your career?
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: isMobile ? "100%" : 560 }}>
-                  {chips.map((c) => (
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: msgPadding, paddingBottom: isMobile || isTablet ? `calc(${msgPadding.split(" ")[0]} + ${BOTTOM_NAV_H}px)` : msgPadding.split(" ")[0], display: "flex", flexDirection: "column", gap: 16, position: "relative", zIndex: 1 }}>
+              {isEmpty && (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, textAlign: "center", animation: "nfadeUp 0.5s ease", padding: "20px 0" }}>
+                  <NexoraLogo />
+                  <h1 style={{ margin: "0 0 8px", fontSize: isMobile ? 22 : isTablet ? 26 : 30, fontWeight: 700, color: "#f1f5f9", fontFamily: "'Syne',sans-serif", letterSpacing: "-0.03em" }}>
+                    Good {greeting}, {userInfo?.name || "there"}.
+                  </h1>
+                  <p style={{ margin: "0 0 24px", fontSize: isMobile ? 14 : 17, color: "#64748b", fontWeight: 300 }}>Can I help you navigate your career?</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: isMobile ? "100%" : 560 }}>
+                    {chips.map((c) => (
+                      <button key={c} onClick={() => send(c)} className="ncc-chip"
+                        style={{ padding: isMobile ? "7px 12px" : "8px 16px", borderRadius: 20, fontSize: isMobile ? 11 : 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#94a3b8", cursor: "pointer", transition: "all 0.18s" }}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((msg, i) => (
+                <div key={msg.id || i} className="ncc-msg">
+                  <Message msg={msg} userInfo={userInfo} />
+                </div>
+              ))}
+
+              {loading && (
+                <div className="ncc-msg" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(139,92,246,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", flexShrink: 0 }}>N</div>
+                  <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px 18px 18px 18px" }}><TypingDots /></div>
+                </div>
+              )}
+
+              {!isEmpty && !loading && messages[messages.length - 1]?.role === "assistant" && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 38 }}>
+                  {chips.slice(0, isMobile ? 2 : 3).map((c) => (
                     <button key={c} onClick={() => send(c)} className="ncc-chip"
-                      style={{ padding: isMobile ? "7px 12px" : "8px 16px", borderRadius: 20, fontSize: isMobile ? 11 : 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#94a3b8", cursor: "pointer", transition: "all 0.18s" }}>
+                      style={{ padding: "6px 12px", borderRadius: 20, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", color: "#64748b", cursor: "pointer", transition: "all 0.18s" }}>
                       {c}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {messages.map((msg, i) => (
-              <div key={msg.id || i} className="ncc-msg">
-                <Message msg={msg} userInfo={userInfo} />
-              </div>
-            ))}
-
-            {loading && (
-              <div className="ncc-msg" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(139,92,246,0.8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", flexShrink: 0 }}>N</div>
-                <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px 18px 18px 18px" }}>
-                  <TypingDots />
-                </div>
-              </div>
-            )}
-
-            {!isEmpty && !loading && messages[messages.length - 1]?.role === "assistant" && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingLeft: 38 }}>
-                {chips.slice(0, isMobile ? 2 : 3).map((c) => (
-                  <button key={c} onClick={() => send(c)} className="ncc-chip"
-                    style={{ padding: "6px 12px", borderRadius: 20, fontSize: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", color: "#64748b", cursor: "pointer", transition: "all 0.18s" }}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* ══ INPUT AREA ════════════════════════════════════ */}
-          <div style={{ padding: inputPadding, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(13,13,22,0.92)", backdropFilter: "blur(12px)", position: "relative", zIndex: 10 }}>
-            <div className="ncc-input-wrap" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 14, padding: isMobile ? "10px 12px" : "12px 14px", transition: "border-color 0.2s" }}>
-              <textarea ref={textareaRef} rows={1} value={input}
-                onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
-                placeholder={
-                  mode === "resume"    ? "Paste your resume or ask for review tips..." :
-                  mode === "skillgap"  ? "Tell me your current skills and target role..." :
-                  mode === "interview" ? "Tell me the role you are interviewing for..." :
-                  "Ask about careers, skills, roadmaps..."
-                }
-                style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#e2e8f0", fontSize: isMobile ? 13 : 14, resize: "none", lineHeight: 1.55, maxHeight: 100, overflow: "auto", fontFamily: "'DM Sans',sans-serif" }}
-              />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
-                  <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md" style={{ display: "none" }} onChange={handleUpload} />
-                  <button onClick={handleUploadClick} disabled={uploading} className="ncc-upload"
-                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 20, cursor: "pointer", fontSize: 11, fontWeight: 500, transition: "all 0.18s", flexShrink: 0, background: uploadSuccess ? "rgba(16,185,129,0.09)" : "rgba(255,255,255,0.04)", border: uploadSuccess ? "1px solid rgba(16,185,129,0.28)" : "1px solid rgba(255,255,255,0.09)", color: uploadSuccess ? "#34d399" : "#64748b" }}>
-                    {uploading
-                      ? <span style={{ width: 10, height: 10, border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "#7c3aed", borderRadius: "50%", display: "inline-block", animation: "nspin 0.8s linear infinite" }} />
-                      : uploadSuccess
-                      ? <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      : <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 10v4h12v-4M8 2v9M5 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    }
-                    {uploading ? "Uploading..." : uploadSuccess ? (isMobile ? "✓ Resume" : uploadedFileName || "Resume attached") : isMobile ? "Resume" : "Upload Resume"}
-                  </button>
-                  {/* On mobile show only active mode pill; on tablet/desktop show all */}
-                  {(isMobile ? [{ label: MODES.find(m => m.id === mode)?.label || "Career Guide", id: mode }] : ["Resume Review", "Skill Gap", "Mock Interview"].map(label => ({ label, id: { "Resume Review": "resume", "Skill Gap": "skillgap", "Mock Interview": "interview" }[label] }))).map(({ label, id: modeId }) => {
-                    const active = mode === modeId;
-                    return (
-                      <button key={modeId} onClick={() => !isMobile && setMode(modeId)}
-                        style={{ padding: "5px 10px", borderRadius: 20, fontSize: 11, cursor: isMobile ? "default" : "pointer", transition: "all 0.18s", background: active ? "rgba(139,92,246,0.14)" : "rgba(255,255,255,0.03)", border: active ? "1px solid rgba(139,92,246,0.32)" : "1px solid rgba(255,255,255,0.07)", color: active ? "#a78bfa" : "#475569", fontFamily: "'DM Sans',sans-serif", flexShrink: 0 }}>
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button onClick={() => send()} disabled={!input.trim() || loading} className="ncc-send"
-                  style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", background: "#6d28d9", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.18s", flexShrink: 0, marginLeft: 8, boxShadow: "0 0 14px rgba(109,40,217,0.35)" }}>
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white"/></svg>
-                </button>
-              </div>
+              )}
+              <div ref={bottomRef} />
             </div>
-            {!isMobile && <p style={{ textAlign: "center", fontSize: 10, color: "#1e293b", margin: "6px 0 0" }}>Nexora Career AI</p>}
+
+            {/* Input */}
+            <div style={{ padding: inputPadding, paddingBottom: isMobile || isTablet ? `calc(${inputPadding.split(" ")[0]} + ${BOTTOM_NAV_H + 4}px)` : inputPadding.split(" ")[0], borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(13,13,22,0.92)", backdropFilter: "blur(12px)", position: "relative", zIndex: 10 }}>
+              <div className="ncc-input-wrap" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 14, padding: isMobile ? "10px 12px" : "12px 14px", transition: "border-color 0.2s" }}>
+                <textarea ref={textareaRef} rows={1} value={input}
+                  onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
+                  placeholder={mode === "resume" ? "Paste your resume or ask for review tips..." : mode === "skillgap" ? "Tell me your current skills and target role..." : mode === "interview" ? "Tell me the role you are interviewing for..." : "Ask about careers, skills, roadmaps..."}
+                  style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#e2e8f0", fontSize: isMobile ? 13 : 14, resize: "none", lineHeight: 1.55, maxHeight: 100, overflow: "auto", fontFamily: "'DM Sans',sans-serif" }}
+                />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
+                    <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md" style={{ display: "none" }} onChange={handleUpload} />
+                    <button onClick={handleUploadClick} disabled={uploading} className="ncc-upload"
+                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 20, cursor: "pointer", fontSize: 11, fontWeight: 500, transition: "all 0.18s", flexShrink: 0, background: uploadSuccess ? "rgba(16,185,129,0.09)" : "rgba(255,255,255,0.04)", border: uploadSuccess ? "1px solid rgba(16,185,129,0.28)" : "1px solid rgba(255,255,255,0.09)", color: uploadSuccess ? "#34d399" : "#64748b" }}>
+                      {uploading ? <span style={{ width: 10, height: 10, border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "#7c3aed", borderRadius: "50%", display: "inline-block", animation: "nspin 0.8s linear infinite" }} />
+                        : uploadSuccess ? <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        : <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 10v4h12v-4M8 2v9M5 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      {uploading ? "Uploading..." : uploadSuccess ? (isMobile ? "✓ Resume" : uploadedFileName || "Resume attached") : isMobile ? "Resume" : "Upload Resume"}
+                    </button>
+                    {(isMobile
+                      ? [{ label: MODES.find(m => m.id === mode)?.label || "Career Guide", id: mode }]
+                      : ["Resume Review", "Skill Gap", "Mock Interview"].map(label => ({ label, id: { "Resume Review": "resume", "Skill Gap": "skillgap", "Mock Interview": "interview" }[label] }))
+                    ).map(({ label, id: modeId }) => {
+                      const active = mode === modeId;
+                      return (
+                        <button key={modeId} onClick={() => !isMobile && setMode(modeId)}
+                          style={{ padding: "5px 10px", borderRadius: 20, fontSize: 11, cursor: isMobile ? "default" : "pointer", transition: "all 0.18s", background: active ? "rgba(139,92,246,0.14)" : "rgba(255,255,255,0.03)", border: active ? "1px solid rgba(139,92,246,0.32)" : "1px solid rgba(255,255,255,0.07)", color: active ? "#a78bfa" : "#475569", fontFamily: "'DM Sans',sans-serif", flexShrink: 0 }}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button onClick={() => send()} disabled={!input.trim() || loading} className="ncc-send"
+                    style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", background: "#6d28d9", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.18s", flexShrink: 0, marginLeft: 8, boxShadow: "0 0 14px rgba(109,40,217,0.35)" }}>
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white"/></svg>
+                  </button>
+                </div>
+              </div>
+              {!isMobile && <p style={{ textAlign: "center", fontSize: 10, color: "#1e293b", margin: "6px 0 0" }}>Nexora Career AI</p>}
+            </div>
           </div>
         </div>
+
+        {/* ══ BOTTOM NAV BAR — mobile & tablet only ═══════════════ */}
+        {(isMobile || isTablet) && (
+          <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: BOTTOM_NAV_H, background: "rgba(10,10,18,0.97)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-around", zIndex: 30, backdropFilter: "blur(16px)", padding: "0 8px" }}>
+
+            {/* Chat */}
+            <button className={`ncc-bnav-btn${mobilePanel === null && !sidebarOpen ? " active" : ""}`}
+              onClick={() => { setMobilePanel(null); setSidebarOpen(false); }}
+              style={{ color: mobilePanel === null && !sidebarOpen ? "#a78bfa" : "#475569" }}>
+              <ChatBubbleIcon active={mobilePanel === null && !sidebarOpen} />
+              <span style={{ fontSize: 10, fontWeight: 500 }}>Chat</span>
+            </button>
+
+            {/* History */}
+            <button className={`ncc-bnav-btn${mobilePanel === "history" ? " active" : ""}`}
+              onClick={() => { setMobilePanel(mobilePanel === "history" ? null : "history"); setSidebarOpen(false); }}
+              style={{ color: mobilePanel === "history" ? "#a78bfa" : "#475569", position: "relative" }}>
+              <ClockHistoryIcon active={mobilePanel === "history"} />
+              <span style={{ fontSize: 10, fontWeight: 500 }}>History</span>
+              {sessions.length > 0 && mobilePanel !== "history" && (
+                <span style={{ position: "absolute", top: 4, right: "calc(50% - 14px)", width: 16, height: 16, borderRadius: "50%", background: "#7c3aed", color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {sessions.length > 9 ? "9+" : sessions.length}
+                </span>
+              )}
+            </button>
+
+            {/* New Chat */}
+            <button className="ncc-bnav-btn"
+              onClick={newChat}
+              style={{ color: "#475569" }}>
+              <PlusNewIcon active={false} />
+              <span style={{ fontSize: 10, fontWeight: 500 }}>New</span>
+            </button>
+
+            {/* Mode */}
+            <button className={`ncc-bnav-btn${mobilePanel === "mode" ? " active" : ""}`}
+              onClick={() => { setMobilePanel(mobilePanel === "mode" ? null : "mode"); setSidebarOpen(false); }}
+              style={{ color: mobilePanel === "mode" ? "#a78bfa" : "#475569" }}>
+              <ModeIcon active={mobilePanel === "mode"} />
+              <span style={{ fontSize: 10, fontWeight: 500 }}>Mode</span>
+            </button>
+
+            {/* Menu (full sidebar) */}
+            <button className={`ncc-bnav-btn${sidebarOpen ? " active" : ""}`}
+              onClick={() => { setSidebarOpen(!sidebarOpen); setMobilePanel(null); }}
+              style={{ color: sidebarOpen ? "#a78bfa" : "#475569" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth={sidebarOpen ? "2" : "1.5"} strokeLinecap="round"/>
+              </svg>
+              <span style={{ fontSize: 10, fontWeight: 500 }}>Menu</span>
+            </button>
+          </nav>
+        )}
+
+        {/* ══ MOBILE BOTTOM SHEETS ════════════════════════════════ */}
+
+        {/* History sheet */}
+        {mobilePanel === "history" && (isMobile || isTablet) && (
+          <div className="ncc-sheet" style={{ position: "fixed", bottom: BOTTOM_NAV_H, left: 0, right: 0, height: "75dvh", background: "#0d0d16", borderTop: "1px solid rgba(255,255,255,0.1)", borderRadius: "20px 20px 0 0", zIndex: 45, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {/* Drag handle */}
+            <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 0" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.15)" }} />
+            </div>
+            <HistoryPanel
+              sessions={sessions} grouped={grouped} activeSession={activeSession}
+              sessionsLoading={sessionsLoading} confirmDelete={confirmDelete}
+              editingId={editingId} editTitle={editTitle} setEditTitle={setEditTitle}
+              setEditingId={setEditingId} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+              switchSession={switchSession} startRename={startRename} saveRename={saveRename}
+              handleRenameKey={handleRenameKey} deleteSession={deleteSession}
+              setConfirmDelete={setConfirmDelete} editInputRef={editInputRef}
+              newChat={newChat} onClose={() => setMobilePanel(null)}
+            />
+          </div>
+        )}
+
+        {/* Mode sheet */}
+        {mobilePanel === "mode" && (isMobile || isTablet) && (
+          <div className="ncc-sheet" style={{ position: "fixed", bottom: BOTTOM_NAV_H, left: 0, right: 0, height: "auto", maxHeight: "65dvh", background: "#0d0d16", borderTop: "1px solid rgba(255,255,255,0.1)", borderRadius: "20px 20px 0 0", zIndex: 45, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 0" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.15)" }} />
+            </div>
+            <ModePanel mode={mode} setMode={setMode} onClose={() => setMobilePanel(null)} />
+          </div>
+        )}
+
       </div>
     </>
   );
