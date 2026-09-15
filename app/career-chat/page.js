@@ -7,8 +7,6 @@ export const metadata = {
   description: "AI-powered career guidance — paths, skills, resume review & more.",
 };
 
-// This tells Next.js NOT to use the root layout (removes your Nexora navbar)
-// so the chatbot takes the full screen
 export default async function CareerChatPage() {
   const { userId } = await auth();
 

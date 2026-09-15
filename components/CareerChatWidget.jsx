@@ -126,6 +126,7 @@ export default function CareerChatWidget() {
   const widgetBR = isMobile ? 0 : 20;
 
   return (
+  
     <>
       <style>{`
         @keyframes wcbounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }

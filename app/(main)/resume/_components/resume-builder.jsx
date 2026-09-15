@@ -147,16 +147,30 @@ export default function ResumeBuilder({ initialContent }) {
   };
 
   return (
-    <div data-color-mode="light" className="space-y-4">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
-        <h1 className="font-bold gradient-title text-5xl md:text-6xl">
-          Resume Builder
-        </h1>
-        <div className="space-x-2">
+    <div
+      data-color-mode="dark"
+      className="relative -mx-4 min-h-[calc(100vh-5rem)] overflow-hidden px-4 py-8 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+    >
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_32%),linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[size:auto,32px_32px,32px_32px]" />
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-5 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              Career workspace
+            </p>
+            <h1 className="gradient-title text-4xl font-bold sm:text-5xl">
+              Resume Builder
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
+              Shape your experience into a resume that gets noticed.
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Button
             variant="destructive"
             onClick={handleSubmit(onSubmit)}
             disabled={isSaving}
+            className="w-full sm:w-auto"
           >
             {isSaving ? (
               <>
@@ -183,21 +197,25 @@ export default function ResumeBuilder({ initialContent }) {
               </>
             )}
           </Button>
+          </div>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mx-auto max-w-7xl">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-white/10 bg-black/20 p-1 sm:w-fit">
           <TabsTrigger value="edit">Form</TabsTrigger>
           <TabsTrigger value="preview">Markdown</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="edit">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <TabsContent value="edit" className="mt-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/50">
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-card/70 p-4 shadow-2xl shadow-black/10 sm:p-6">
+              <div>
+                <h3 className="text-lg font-medium">Contact Information</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Give employers a clear way to reach you.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email</label>
                   <Input
@@ -257,8 +275,11 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
 
             {/* Summary */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Professional Summary</h3>
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-card/70 p-4 shadow-2xl shadow-black/10 sm:p-6">
+              <div>
+                <h3 className="text-lg font-medium">Professional Summary</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Lead with the value you bring to your next role.</p>
+              </div>
               <Controller
                 name="summary"
                 control={control}
@@ -277,8 +298,11 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
 
             {/* Skills */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Skills</h3>
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-card/70 p-4 shadow-2xl shadow-black/10 sm:p-6">
+              <div>
+                <h3 className="text-lg font-medium">Skills</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Make your strongest capabilities easy to scan.</p>
+              </div>
               <Controller
                 name="skills"
                 control={control}
@@ -297,8 +321,11 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
 
             {/* Experience */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Work Experience</h3>
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-card/70 p-4 shadow-2xl shadow-black/10 sm:p-6">
+              <div>
+                <h3 className="text-lg font-medium">Work Experience</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Turn your past work into proof of impact.</p>
+              </div>
               <Controller
                 name="experience"
                 control={control}
@@ -318,8 +345,11 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
 
             {/* Education */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Education</h3>
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-card/70 p-4 shadow-2xl shadow-black/10 sm:p-6">
+              <div>
+                <h3 className="text-lg font-medium">Education</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Add the academic details that support your story.</p>
+              </div>
               <Controller
                 name="education"
                 control={control}
@@ -339,8 +369,11 @@ export default function ResumeBuilder({ initialContent }) {
             </div>
 
             {/* Projects */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Projects</h3>
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-card/70 p-4 shadow-2xl shadow-black/10 sm:p-6">
+              <div>
+                <h3 className="text-lg font-medium">Projects</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Show the work that makes your skills real.</p>
+              </div>
               <Controller
                 name="projects"
                 control={control}
@@ -393,7 +426,7 @@ export default function ResumeBuilder({ initialContent }) {
               </span>
             </div>
           )}
-          <div className="border rounded-lg">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl shadow-black/20">
             <MDEditor
               value={previewContent}
               onChange={setPreviewContent}

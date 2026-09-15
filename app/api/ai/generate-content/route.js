@@ -4,9 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import { generateResumeText } from "@/lib/resume-llm";
 
 export async function POST(req) {
   try {
@@ -18,8 +16,6 @@ export async function POST(req) {
 
     const body = await req.json();
     const { field, resumeData, jobDescription, position, company } = body;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
     let prompt = "";
 
@@ -60,9 +56,7 @@ Return ONLY bullet points (one per line with • prefix):`;
       return NextResponse.json({ error: "Invalid field type" }, { status: 400 });
     }
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let content = response.text().trim();
+    let content = await generateResumeText(prompt);
     
     content = content.replace(/```/g, "").replace(/\*\*/g, "");
 

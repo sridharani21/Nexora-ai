@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 import Header from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { dark } from "@clerk/themes";
-import CareerChatWidget from "@/components/CareerChatWidget";
+import AppShell from "@/components/AppShell";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,18 +29,10 @@ export default function RootLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           >
-            <Header />
-
-            <main className="min-h-screen">{children}</main>
-
+            <AppShell header={<Header />}>
+              {children}
+            </AppShell>
             <Toaster richColors />
-
-            <footer className="bg-muted/50 py-12">
-              <div className="container mx-auto px-4 text-center text-gray-200">
-                <p>Nexora AI — Your trusted AI career companion.</p>
-                <CareerChatWidget />
-              </div>
-            </footer>
           </ThemeProvider>
         </ClerkProvider>
       </body>

@@ -1,11 +1,14 @@
 
 import { getIndustryInsights } from "@/actions/dashboard";
 import { getUserOnboardingStatus } from "@/actions/user";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import DashboardView from "./_components/dashboard-view";
 
 const IndustryInsightsPage = async () => {
- 
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
   const { isOnboarded } = await getUserOnboardingStatus();
   const insights = await getIndustryInsights();
 

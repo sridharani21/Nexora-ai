@@ -2,10 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+import { generateResumeText } from "@/lib/resume-llm";
 
 export async function generateCoverLetter(data) {
   const { userId } = await auth();
@@ -13,9 +10,23 @@ export async function generateCoverLetter(data) {
 
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
+    include: {
+      resumes: {
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+        include: {
+          experiences: true,
+          education: true,
+          skills: true,
+          projects: true,
+          certifications: true,
+        },
+      },
+    },
   });
 
   if (!user) throw new Error("User not found");
+  const resume = user.resumes[0];
 
   const prompt = `
     Write a professional cover letter for a ${data.jobTitle} position at ${
@@ -25,8 +36,9 @@ export async function generateCoverLetter(data) {
     About the candidate:
     - Industry: ${user.industry}
     - Years of Experience: ${user.experience}
-    - Skills: ${user.skills?.join(", ")}
-    - Professional Background: ${user.bio}
+    - Skills: ${resume?.skills?.map((skill) => skill.name).join(", ") || user.skills?.join(", ")}
+    - Professional Background: ${resume?.summary || user.bio}
+    - Verified resume details: ${JSON.stringify(resume || "No saved resume")}
     
     Job Description:
     ${data.jobDescription}
@@ -37,15 +49,14 @@ export async function generateCoverLetter(data) {
     3. Show understanding of the company's needs
     4. Keep it concise (max 400 words)
     5. Use proper business letter formatting in markdown
-    6. Include specific examples of achievements
+    6. Include specific examples only when present in the verified resume details; never invent achievements
     7. Relate candidate's background to job requirements
     
     Format the letter in markdown.
   `;
 
   try {
-    const result = await model.generateContent(prompt);
-    const content = result.response.text().trim();
+    const content = await generateResumeText(prompt);
 
     const coverLetter = await db.coverLetter.create({
       data: {

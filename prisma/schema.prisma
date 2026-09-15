@@ -37,6 +37,7 @@ model User {
   resumes       Resume[]   // FIXED: Changed from 'resume Resume?' to 'resumes Resume[]'
   coverLetter   CoverLetter[]
   roadmaps  Roadmap[]
+  careerDiscovery CareerDiscovery?
 }
 
 model Assessment {
@@ -311,6 +312,35 @@ model ATSAnalysisHistory {
   
   @@index([resumeId])
   @@map("ats_analysis_history")
+}
+
+model CareerDiscovery {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  education       String?
+  experienceYears Int?
+  currentRole     String?
+  skills          String[] @default([])
+  interests       String[] @default([])
+  location        String?
+  careerGoal      String?
+
+  currentStep     String   @default("profile")
+
+  careerRecommendations Json?
+  selectedCareer        String?
+  selectedCareerReason  String?
+  skillGap              Json?
+  roadmap               Json?
+  courses               Json?
+  learningPlan          Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Roadmap {

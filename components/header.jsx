@@ -4,8 +4,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { Button } from './ui/button'
-import { ChevronDown, FileText, GraduationCap, LayoutDashboard, MessageSquare, PenBox, StarsIcon } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
+import { ChevronDown, FileText, GraduationCap, LayoutDashboard, LayoutGrid, MessageSquare, PenBox, StarsIcon } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { checkUser } from '@/lib/CheckUser'
 
 
@@ -77,6 +77,13 @@ const Header = async () => {
                                     <Link href={"/course-recommendations"} className="flex items-center gap-2">
                                         <GraduationCap className="h-4 w-4" />
                                         <span>Course Rec</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                    <Link href={"/growth-tools"} className="flex items-center gap-2">
+                                        <LayoutGrid className="h-4 w-4" />
+                                        <span>More</span>
                                     </Link>
                                 </DropdownMenuItem>
 
