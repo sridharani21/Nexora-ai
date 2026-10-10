@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 const HeroSection = () => {
   const imageRef = useRef(null);
@@ -40,6 +41,16 @@ const HeroSection = () => {
           </p>
         </div>
         <div className="flex justify-center space-x-4">
+          <SignedOut>
+            <SignInButton mode="modal" fallbackRedirectUrl="/placement-prep/dashboard">
+              <Button size="lg" className="px-8">Start Preparation</Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/placement-prep/dashboard">
+              <Button size="lg" className="px-8">Start Preparation</Button>
+            </Link>
+          </SignedIn>
           <Link href="/dashboard">
             <Button size="lg" className="px-8">
               Get Started

@@ -1,0 +1,10 @@
+import Link from "next/link";
+import { ArrowRight, CheckCircle2, Compass } from "lucide-react";
+import { getReadiness } from "@/actions/prep-readiness";
+import SiteNav from "../components/site-nav";
+
+export default async function CareersPage() {
+  const readiness = await getReadiness();
+  if (!readiness) return <><SiteNav /><main className="container"><section className="hero"><div className="eyebrow">Career recommendations</div><h1>Find careers supported by your evidence.</h1><p className="lead">Generate your assessment analysis before viewing explainable career recommendations.</p><Link className="button button-primary" href="/placement-prep/readiness">Generate analysis <ArrowRight size={16} /></Link></section></main></>;
+  return <><SiteNav /><main className="container"><section className="hero"><div className="eyebrow">Career recommendations</div><h1>Career recommendations with reasons, not guesses.</h1><p className="lead">These recommendations compare your assessed skills with role requirements. They are guidance and can change as your evidence improves.</p><div className="actions"><Link className="button button-primary" href="/placement-prep/what-if">Compare career paths <Compass size={16} /></Link><Link className="button button-secondary" href="/placement-prep/placement-score">View Placement Score</Link></div></section><section className="section"><div className="grid grid-3">{readiness.careerSuitability.map((role) => <article className="card" key={role.role}><CheckCircle2 className="icon" size={20} /><h3>{role.role}</h3><div className="stat-value">{role.score}%</div><p>{role.matchingSkills.length} matching skills · {role.missingSkills.length} gaps</p><div className="progress"><span style={{ width: `${role.score}%` }} /></div><p className="helper">Strong evidence: {role.matchingSkills.slice(0, 3).join(", ") || "Build more assessment evidence."}</p><p className="helper">Priority gaps: {role.missingSkills.slice(0, 3).join(", ") || "None currently identified."}</p></article>)}</div></section></main></>;
+}

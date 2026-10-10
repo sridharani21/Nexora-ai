@@ -7,6 +7,7 @@ import CareerChatWidget from "@/components/CareerChatWidget";
 export default function AppShell({ header, children }) {
   const pathname = usePathname();
   const isCareerChat = pathname?.startsWith("/career-chat");
+  const isPlacementPrep = pathname?.startsWith("/placement-prep");
 
   useEffect(() => {
     if (!isCareerChat) return;
@@ -23,9 +24,9 @@ export default function AppShell({ header, children }) {
 
   return (
     <>
-      {header}
+      {!isPlacementPrep && header}
       <main className={isCareerChat ? undefined : "min-h-screen"}>{children}</main>
-      {!isCareerChat && (
+      {!isCareerChat && !isPlacementPrep && (
         <footer className="bg-muted/50 py-12">
           <div className="container mx-auto px-4 text-center text-gray-200">
             <p>Nexora AI — Your trusted AI career companion.</p>

@@ -1,0 +1,108 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, Camera, CheckCircle2, Expand, Loader2, Mic, ShieldAlert } from "lucide-react";
+import { lockAssessment, recordIntegrityEvent } from "@/actions/prep-integrity";
+import { saveAssessment } from "@/actions/prep-assessment";
+import { ASSESSMENT_SECTIONS } from "@/data/prep-assessment";
+
+export default function AssessmentClient({ access }) {
+  const [sectionIndex, setSectionIndex] = useState(0), [questionIndex, setQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState({}), [result, setResult] = useState(null), [error, setError] = useState("");
+  const [saving, setSaving] = useState(false), [events, setEvents] = useState([]);
+  const [mediaEvents, setMediaEvents] = useState([]);
+  const [camera, setCamera] = useState(false), [mic, setMic] = useState(false), [full, setFull] = useState(false);
+  const [locked, setLocked] = useState(!access.allowed), [until, setUntil] = useState(access.lockedUntil);
+  const streamRef = useRef(null), videoRef = useRef(null);
+  const section = ASSESSMENT_SECTIONS[sectionIndex], question = section.questions[questionIndex];
+  useEffect(() => {
+    if (locked) return undefined;
+    const register = (type) => {
+      const event = { type, at: new Date().toISOString() };
+      setEvents((current) => { const next = [...current, event]; if (next.length === 5) lockAssessment().then((lock) => { setUntil(lock.lockedUntil); setLocked(true); }); return next; });
+      recordIntegrityEvent(type, { questionId: question.id }).catch(() => setError("Integrity event could not be stored."));
+    };
+    const visibility = () => document.hidden && register("tab-hidden");
+    const blur = () => register("window-blur");
+    const block = (event, type) => { event.preventDefault(); register(type); };
+    const fullscreen = () => { setFull(Boolean(document.fullscreenElement)); if (!document.fullscreenElement) register("fullscreen-exited"); };
+    document.addEventListener("visibilitychange", visibility); window.addEventListener("blur", blur);
+    document.addEventListener("copy", (e) => block(e, "copy-blocked")); document.addEventListener("paste", (e) => block(e, "paste-blocked"));
+    document.addEventListener("contextmenu", (e) => block(e, "context-menu-blocked")); document.addEventListener("fullscreenchange", fullscreen);
+    return () => { document.removeEventListener("visibilitychange", visibility); window.removeEventListener("blur", blur); document.removeEventListener("fullscreenchange", fullscreen); };
+  }, [locked, question.id]);
+  useEffect(() => {
+    const stream = streamRef.current;
+    if (!stream || locked || result) return undefined;
+    const listeners = [];
+    const watchTrack = (track, label, setReady) => {
+      const update = (event) => {
+        setReady(track.readyState === "live" && !track.muted);
+        const type = `${label}-track-${event.type === "ended" ? "ended" : event.type === "mute" ? "muted" : "unmuted"}`;
+        const entry = { type, at: new Date().toISOString() };
+        setMediaEvents((current) => [...current, entry]);
+        recordIntegrityEvent(type, { questionId: question.id }).catch(() => setError("Media monitoring event could not be stored."));
+      };
+      for (const eventType of ["mute", "unmute", "ended"]) {
+        track.addEventListener(eventType, update);
+        listeners.push(() => track.removeEventListener(eventType, update));
+      }
+    };
+    stream.getVideoTracks().forEach((track) => watchTrack(track, "camera", setCamera));
+    stream.getAudioTracks().forEach((track) => watchTrack(track, "microphone", setMic));
+    return () => listeners.forEach((remove) => remove());
+  }, [camera, mic, locked, question.id, result]);
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = streamRef.current;
+  }, [camera, mic, full, result]);
+  useEffect(() => {
+    if (!locked && !result) return;
+    const stream = streamRef.current;
+    if (!stream) return;
+    streamRef.current = null;
+    stream.getTracks().forEach((track) => track.stop());
+    setCamera(false);
+    setMic(false);
+  }, [locked, result]);
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+  async function start() {
+    try {
+      await document.documentElement.requestFullscreen();
+      setFull(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = stream;
+      setCamera(stream.getVideoTracks().some((track) => track.readyState === "live" && !track.muted));
+      setMic(stream.getAudioTracks().some((track) => track.readyState === "live" && !track.muted));
+      setError("");
+    } catch {
+      setError("Fullscreen, camera, and microphone permission are required.");
+    }
+  }
+  async function next() {
+    if (!answers[question.id] || locked) return;
+    if (questionIndex < section.questions.length - 1) return setQuestionIndex((value) => value + 1);
+    if (sectionIndex < ASSESSMENT_SECTIONS.length - 1) { setSectionIndex((value) => value + 1); return setQuestionIndex(0); }
+    setSaving(true); try { setResult(await saveAssessment({ answers, integrityEvents: events, mediaEvents })); } catch (e) { setError(e.message); } finally { setSaving(false); }
+  }
+  if (locked) return <LockScreen until={until} />;
+  if (result) return <main className="assessment-screen"><section className="assessment-card"><div className="eyebrow"><CheckCircle2 size={17} /> Assessment saved</div><h1>Your skill profile is ready.</h1><div className="grid grid-3"><Metric label="Overall score" value={`${result.overallScore}%`} /><Metric label="Suitability" value={`${result.careerProfile.suitability}%`} /><Metric label="Integrity events" value={events.length + mediaEvents.length} /></div><Link className="button button-primary" href="/placement-prep/dashboard">Return to workspace</Link></section></main>;
+  if (!full || !camera || !mic) return <main className="assessment-screen"><section className="assessment-card"><div className="eyebrow"><ShieldAlert size={17} /> Secure assessment setup</div><h1>Prepare your test environment.</h1><p className="helper">Fullscreen, camera, and microphone are required. During the assessment, Nexora checks that camera and microphone tracks stay active, but does not record or upload audio or video. Only connection-status events are saved.</p><div className="security-checks"><Check label="Fullscreen" ready={full} icon={Expand} /><Check label="Camera" ready={camera} icon={Camera} /><Check label="Microphone" ready={mic} icon={Mic} /></div>{error && <p className="error-message">{error}</p>}<button className="button button-primary" onClick={start}>{camera || mic ? "Reconnect camera and microphone" : "Enter secure assessment"}</button><Link className="button button-secondary" href="/placement-prep/dashboard">Cancel</Link><Link className="home-button" href="/placement-prep">Go to Home</Link></section></main>;
+  return <main className="assessment-screen"><section className="assessment-card"><div className="assessment-top"><span className="eyebrow">Strict assessment · {question.difficulty || "easy"}</span><span className="badge">{events.length + mediaEvents.length} integrity events</span></div><div className="assessment-media-monitor"><video aria-label="Local camera preview" autoPlay className="assessment-camera-preview" muted playsInline ref={videoRef} /><div><span className="badge">{camera ? "Camera active" : "Camera unavailable"}</span><span className="badge">{mic ? "Microphone active" : "Microphone unavailable"}</span><p className="helper">Local status only; no audio or video is recorded or uploaded.</p></div></div><h1>{section.title}</h1><p className="helper">{section.description}</p><h2>{question.prompt}</h2><div className="answer-grid">{question.options.map(([value, label]) => <button className={`button ${answers[question.id] === value ? "button-primary" : "button-secondary"}`} key={value} onClick={() => setAnswers((current) => ({ ...current, [question.id]: value }))}>{label}</button>)}</div>{error && <p className="error-message">{error}</p>}<button className="button button-primary next-button" disabled={!answers[question.id] || saving} onClick={next}>{saving ? <><Loader2 size={16} /> Saving</> : <><span>Continue</span><ArrowRight size={16} /></>}</button></section></main>;
+}
+function LockScreen({ until }) {
+  const [remaining, setRemaining] = useState("");
+  useEffect(() => {
+    if (!until) return undefined;
+    const tick = () => setRemaining(`${Math.max(0, Math.ceil((new Date(until).getTime() - Date.now()) / 60000))} minutes`);
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [until]);
+  return <main className="assessment-screen"><section className="assessment-card"><div className="eyebrow"><ShieldAlert size={17} /> Assessment unavailable</div><h1>{until ? "Please wait before trying again." : "Complete your profile first."}</h1>{until && <div className="lock-timer">{remaining}</div>}<p className="helper">{until ? "This lock is database-backed. Each later lock adds five minutes." : "Save your student profile before starting the assessment."}</p><Link className="button button-secondary" href="/placement-prep/profile">Go to profile</Link><Link className="home-button" href="/placement-prep">Go to Home</Link></section></main>;
+}
+function Check({ label, ready, icon: Icon }) { return <div className="security-check"><Icon size={19} /><span>{label}</span><strong>{ready ? "Ready" : "Required"}</strong></div>; }
+function Metric({ label, value }) { return <article className="card"><p>{label}</p><div className="stat-value">{value}</div></article>; }

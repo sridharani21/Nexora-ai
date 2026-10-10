@@ -1,0 +1,313 @@
+export const PLACEMENT_PRACTICE_TOPICS = [
+  { id: "aptitude", label: "Aptitude", category: "Aptitude" },
+  { id: "logical-reasoning", label: "Logical reasoning", category: "Logical reasoning" },
+  { id: "verbal-ability", label: "Verbal ability", category: "Verbal ability" },
+  { id: "coding", label: "Coding", category: "Coding" },
+  { id: "dsa", label: "DSA", category: "Technical" },
+  { id: "sql", label: "SQL", category: "Technical" },
+  { id: "oop", label: "OOP", category: "Technical" },
+  { id: "dbms", label: "DBMS", category: "Technical" },
+  { id: "os", label: "Operating systems", category: "Technical" },
+  { id: "computer-networks", label: "Computer Networks", category: "Technical" },
+  { id: "core-technical", label: "Core technical", category: "Technical" },
+  { id: "role-specific", label: "Role-specific", category: "Role-specific" },
+];
+
+export const PLACEMENT_PRACTICE_QUESTIONS = [
+  {
+    id: "aptitude-1",
+    topic: "aptitude",
+    prompt: "A train travels 120 km in 2 hours. What is its average speed?",
+    options: [
+      { value: "40", label: "40 km/h" },
+      { value: "60", label: "60 km/h" },
+      { value: "80", label: "80 km/h" },
+      { value: "120", label: "120 km/h" },
+    ],
+    answer: "60",
+  },
+  {
+    id: "aptitude-2",
+    topic: "aptitude",
+    prompt: "What is 20% of 250?",
+    options: [
+      { value: "25", label: "25" },
+      { value: "40", label: "40" },
+      { value: "50", label: "50" },
+      { value: "75", label: "75" },
+    ],
+    answer: "50",
+  },
+  {
+    id: "logical-reasoning-1",
+    topic: "logical-reasoning",
+    prompt: "What number comes next: 3, 6, 12, 24, ?",
+    options: [
+      { value: "30", label: "30" },
+      { value: "36", label: "36" },
+      { value: "48", label: "48" },
+      { value: "60", label: "60" },
+    ],
+    answer: "48",
+  },
+  {
+    id: "logical-reasoning-2",
+    topic: "logical-reasoning",
+    prompt: "If all APIs are services and some services are public, which statement is certain?",
+    options: [
+      { value: "a", label: "All APIs are public" },
+      { value: "b", label: "Some APIs are public" },
+      { value: "c", label: "All APIs are services" },
+      { value: "d", label: "No service is an API" },
+    ],
+    answer: "c",
+  },
+  {
+    id: "verbal-ability-1",
+    topic: "verbal-ability",
+    prompt: "Choose the clearest replacement: 'The report was made by the team yesterday.'",
+    options: [
+      { value: "a", label: "The team made the report yesterday." },
+      { value: "b", label: "Yesterday the report was made by the team." },
+      { value: "c", label: "The report, it was made yesterday by team." },
+      { value: "d", label: "Made yesterday was the report team." },
+    ],
+    answer: "a",
+  },
+  {
+    id: "verbal-ability-2",
+    topic: "verbal-ability",
+    prompt: "Which word is closest in meaning to 'concise'?",
+    options: [
+      { value: "a", label: "Brief" },
+      { value: "b", label: "Confusing" },
+      { value: "c", label: "Delayed" },
+      { value: "d", label: "Distant" },
+    ],
+    answer: "a",
+  },
+  {
+    id: "coding-1",
+    topic: "coding",
+    prompt: "What is the best first step when solving an unfamiliar coding problem?",
+    options: [
+      { value: "a", label: "Clarify requirements and edge cases" },
+      { value: "b", label: "Choose a random data structure" },
+      { value: "c", label: "Skip testing" },
+      { value: "d", label: "Copy the first result from a search" },
+    ],
+    answer: "a",
+  },
+  {
+    id: "coding-2",
+    topic: "coding",
+    prompt: "Why should a solution consider time complexity?",
+    options: [
+      { value: "a", label: "To understand how it scales with input size" },
+      { value: "b", label: "To avoid naming variables" },
+      { value: "c", label: "To replace syntax checks" },
+      { value: "d", label: "To remove all loops" },
+    ],
+    answer: "a",
+  },
+  {
+    id: "dsa-1",
+    topic: "dsa",
+    prompt: "Which data structure follows first-in, first-out order?",
+    options: [
+      { value: "stack", label: "Stack" },
+      { value: "queue", label: "Queue" },
+      { value: "tree", label: "Tree" },
+      { value: "heap", label: "Heap" },
+    ],
+    answer: "queue",
+  },
+  {
+    id: "dsa-2",
+    topic: "dsa",
+    prompt: "What is the average lookup complexity of a hash table?",
+    options: [
+      { value: "constant", label: "O(1)" },
+      { value: "log", label: "O(log n)" },
+      { value: "linear", label: "O(n)" },
+      { value: "quadratic", label: "O(n²)" },
+    ],
+    answer: "constant",
+  },
+  {
+    id: "sql-1",
+    topic: "sql",
+    prompt: "Which clause filters rows before grouping?",
+    options: [
+      { value: "where", label: "WHERE" },
+      { value: "having", label: "HAVING" },
+      { value: "order", label: "ORDER BY" },
+      { value: "limit", label: "LIMIT" },
+    ],
+    answer: "where",
+  },
+  {
+    id: "sql-2",
+    topic: "sql",
+    prompt: "Which SQL operation combines rows from related tables?",
+    options: [
+      { value: "join", label: "JOIN" },
+      { value: "truncate", label: "TRUNCATE" },
+      { value: "rename", label: "RENAME" },
+      { value: "commit", label: "COMMIT" },
+    ],
+    answer: "join",
+  },
+  {
+    id: "oop-1",
+    topic: "oop",
+    prompt: "Which OOP principle hides internal implementation details?",
+    options: [
+      { value: "encapsulation", label: "Encapsulation" },
+      { value: "inheritance", label: "Inheritance" },
+      { value: "polymorphism", label: "Polymorphism" },
+      { value: "composition", label: "Composition" },
+    ],
+    answer: "encapsulation",
+  },
+  {
+    id: "oop-2",
+    topic: "oop",
+    prompt: "A child class providing its own implementation of a parent method demonstrates:",
+    options: [
+      { value: "overriding", label: "Method overriding" },
+      { value: "overloading", label: "Method overloading" },
+      { value: "casting", label: "Type casting" },
+      { value: "scoping", label: "Lexical scoping" },
+    ],
+    answer: "overriding",
+  },
+  {
+    id: "dbms-1",
+    topic: "dbms",
+    prompt: "What is the primary purpose of a database index?",
+    options: [
+      { value: "retrieve", label: "Speed up data retrieval" },
+      { value: "encrypt", label: "Encrypt every value" },
+      { value: "backup", label: "Replace backups" },
+      { value: "delete", label: "Delete duplicate rows" },
+    ],
+    answer: "retrieve",
+  },
+  {
+    id: "dbms-2",
+    topic: "dbms",
+    prompt: "In ACID, what does the 'A' stand for?",
+    options: [
+      { value: "atomicity", label: "Atomicity" },
+      { value: "availability", label: "Availability" },
+      { value: "accuracy", label: "Accuracy" },
+      { value: "authorization", label: "Authorization" },
+    ],
+    answer: "atomicity",
+  },
+  {
+    id: "os-1",
+    topic: "os",
+    prompt: "Which component chooses the next process to run?",
+    options: [
+      { value: "scheduler", label: "Scheduler" },
+      { value: "compiler", label: "Compiler" },
+      { value: "loader", label: "Loader" },
+      { value: "linker", label: "Linker" },
+    ],
+    answer: "scheduler",
+  },
+  {
+    id: "os-2",
+    topic: "os",
+    prompt: "Virtual memory primarily allows a system to:",
+    options: [
+      { value: "extend", label: "Use storage as an extension of RAM" },
+      { value: "encrypt", label: "Encrypt all network traffic" },
+      { value: "compile", label: "Compile programs faster" },
+      { value: "render", label: "Render graphics without a GPU" },
+    ],
+    answer: "extend",
+  },
+  {
+    id: "computer-networks-1",
+    topic: "computer-networks",
+    prompt: "Which protocol reliably transports a byte stream?",
+    options: [
+      { value: "tcp", label: "TCP" },
+      { value: "udp", label: "UDP" },
+      { value: "dns", label: "DNS" },
+      { value: "arp", label: "ARP" },
+    ],
+    answer: "tcp",
+  },
+  {
+    id: "computer-networks-2",
+    topic: "computer-networks",
+    prompt: "What does DNS primarily resolve?",
+    options: [
+      { value: "names", label: "Domain names to IP addresses" },
+      { value: "files", label: "Files to folders" },
+      { value: "ports", label: "Ports to processes" },
+      { value: "users", label: "Users to passwords" },
+    ],
+    answer: "names",
+  },
+  {
+    id: "core-technical-1",
+    topic: "core-technical",
+    prompt: "Which HTTP method is normally used to create a new resource?",
+    options: [
+      { value: "get", label: "GET" },
+      { value: "post", label: "POST" },
+      { value: "put", label: "PUT" },
+      { value: "head", label: "HEAD" },
+    ],
+    answer: "post",
+  },
+  {
+    id: "core-technical-2",
+    topic: "core-technical",
+    prompt: "What does a unit test normally verify?",
+    options: [
+      { value: "unit", label: "A small unit of behavior in isolation" },
+      { value: "network", label: "Internet bandwidth" },
+      { value: "design", label: "A product's visual design only" },
+      { value: "deploy", label: "Production deployment capacity" },
+    ],
+    answer: "unit",
+  },
+  {
+    id: "role-specific-1",
+    topic: "role-specific",
+    prompt: "For a frontend role, which practice most directly improves accessibility?",
+    options: [
+      { value: "semantic", label: "Use semantic HTML and accessible labels" },
+      { value: "images", label: "Remove all image descriptions" },
+      { value: "color", label: "Use color as the only status signal" },
+      { value: "keyboard", label: "Disable keyboard navigation" },
+    ],
+    answer: "semantic",
+  },
+  {
+    id: "role-specific-2",
+    topic: "role-specific",
+    prompt: "For a backend role, what is a useful API reliability practice?",
+    options: [
+      { value: "validation", label: "Validate input and return consistent errors" },
+      { value: "secret", label: "Return secrets in every response" },
+      { value: "retry", label: "Retry every request forever" },
+      { value: "logs", label: "Avoid all structured logs" },
+    ],
+    answer: "validation",
+  },
+];
+
+export function getPracticeTopics() {
+  return PLACEMENT_PRACTICE_TOPICS;
+}
+
+export function getPracticeQuestions(topic) {
+  return PLACEMENT_PRACTICE_QUESTIONS.filter((question) => question.topic === topic);
+}
