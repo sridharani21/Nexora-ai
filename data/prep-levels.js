@@ -28,8 +28,24 @@ export function levelName(number) {
 
 export function evaluateSkill(skill, attempts, storedLevel = 1) {
   const recent = attempts.slice(0, 5);
+  if (!recent.length) {
+    return {
+      hasEvidence: false,
+      currentLevel: null,
+      levelScore: null,
+      recentAccuracy: null,
+      topicCoverage: 0,
+      progress: 0,
+      recommendedDifficulty: "EASY",
+      nextLevelReason: "Complete a practice attempt in this skill to establish a measured starting level.",
+      advanced: false,
+      demotion: false,
+    };
+  }
   const average = recent.length ? Math.round(recent.reduce((sum, attempt) => sum + attempt.score, 0) / recent.length) : 0;
-  const topics = new Set(recent.map((attempt) => attempt.topic).filter(Boolean));
+  const topics = new Set(recent.flatMap((attempt) => (
+    Array.isArray(attempt.topics) ? attempt.topics : [attempt.topic]
+  )).filter((topic) => skill.topics.includes(topic)));
   const topicCoverage = Math.round((topics.size / skill.topics.length) * 100);
   const timed = recent.filter((attempt) => ["TIMED", "COMPANY_PATTERN", "MISTAKE_REVIEW"].includes(attempt.mode));
   const timedAverage = timed.length ? Math.round(timed.reduce((sum, attempt) => sum + attempt.score, 0) / timed.length) : 0;
@@ -52,6 +68,7 @@ export function evaluateSkill(skill, attempts, storedLevel = 1) {
   const progress = currentLevel === 6 ? 100 : Math.min(99, Math.round((average / 80) * 45 + (topicCoverage / 70) * 35 + (successfulAttempts / Math.max(3, nextLevel * 3)) * 20));
   const recommendedDifficulty = average < 60 ? "EASY" : average < 80 ? "MEDIUM" : currentLevel >= 4 ? "HARD" : "MEDIUM";
   return {
+    hasEvidence: true,
     currentLevel, levelScore: average, recentAccuracy: average, topicCoverage,
     progress: Math.max(0, progress), recommendedDifficulty, nextLevelReason: currentLevel === 6 ? "Interview-ready evidence is being maintained." : `To reach ${levelName(nextLevel)}: ${requirements.join("; ")}.`,
     advanced: earnedLevel > storedLevel, demotion,

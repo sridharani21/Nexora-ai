@@ -24,7 +24,17 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 The placement integrity review console is restricted to verified Clerk accounts whose email addresses are listed in the server-side `PLACEMENT_OFFICER_EMAILS` environment variable. Set it to a comma-separated allowlist, for example `officer-one@example.com,officer-two@example.com`, in your local server environment or deployment settings. Do not use student-controlled or `NEXT_PUBLIC_` variables for this allowlist. If it is unset, officer access remains disabled. During the placement assessment, browser camera and microphone connection status is monitored locally; no audio/video is recorded or uploaded.
 
-After changing the Prisma schema, apply the additive placement-preparation models and fields with `npx prisma db push`, then regenerate Prisma Client with `npx prisma generate`.
+This repository currently uses Prisma schema synchronization rather than checked-in Prisma migration files. After reviewing a schema change and backing up the target database, apply it with `npx prisma db push`, then regenerate Prisma Client with `npx prisma generate`. Run these commands against the intended database environment; do not assume the local `.env` points to the deployment database.
+
+The interview's optional voice input/output uses browser `SpeechRecognition` and `speechSynthesis`; it is not a real-time audio-provider integration. Browser support and audio processing policies vary, and Nexora stores interview transcripts rather than audio recordings. A server-side provider integration would be required for real-time, provider-managed voice. DSA links and student-reported solve statuses do not sync with LeetCode, and job listings/application statuses do not sync with employers. No email or SMS notification provider is configured.
+
+Run the available deterministic scoring and evidence-aggregation tests with:
+
+```bash
+npm test
+```
+
+These unit tests cover placement-score weighting, missing evidence, formula versioning, and readiness aggregation. They do not replace database-backed tests for Clerk ownership, profile persistence, or protected-record access; no such integration-test framework is currently configured.
 
 Browser push is optional and requires HTTPS (localhost is supported during development), a browser with Push API support, and these server environment variables:
 

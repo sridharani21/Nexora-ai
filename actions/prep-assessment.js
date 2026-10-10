@@ -1,9 +1,38 @@
 "use server";
 
+import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { ASSESSMENT_SECTIONS } from "@/data/prep-assessment";
 import { getAssessmentAccess } from "@/actions/prep-integrity";
 import { requirePrepStudentProfile } from "@/lib/prep-student-profile";
+
+const INTEGRITY_EVENT_TYPES = [
+  "tab-hidden",
+  "window-blur",
+  "copy-blocked",
+  "paste-blocked",
+  "context-menu-blocked",
+  "fullscreen-exited",
+];
+const assessmentSubmissionSchema = z.object({
+  answers: z.record(z.string(), z.string()),
+  integrityEvents: z.array(z.object({
+    type: z.enum(INTEGRITY_EVENT_TYPES),
+    at: z.string().max(40).optional(),
+  })).max(100).default([]),
+  mediaEvents: z.array(z.object({
+    type: z.enum([
+      "camera-track-muted",
+      "camera-track-unmuted",
+      "camera-track-ended",
+      "microphone-track-muted",
+      "microphone-track-unmuted",
+      "microphone-track-ended",
+    ]),
+    at: z.string().max(40).optional(),
+  })).max(100).default([]),
+});
+const QUESTION_BANK_VERSION = "diagnostic-v1";
 
 const fields = {
   builder: { name: "Software Development", roles: ["Frontend Developer", "Full Stack Developer"] },
@@ -16,7 +45,20 @@ export async function saveAssessment({ answers, integrityEvents = [], mediaEvent
   const access = await getAssessmentAccess();
   if (!access.allowed) throw new Error(`Assessment locked until ${new Date(access.lockedUntil).toLocaleTimeString()}.`);
   const profile = await requirePrepStudentProfile();
-  const submitted = answers || {};
+  const parsed = assessmentSubmissionSchema.safeParse({ answers, integrityEvents, mediaEvents });
+  if (!parsed.success) throw new Error("Assessment answers or integrity-event data are invalid.");
+  const submitted = parsed.data.answers;
+  const allQuestions = ASSESSMENT_SECTIONS.flatMap((section) => section.questions);
+  const questionIds = new Set(allQuestions.map((question) => question.id));
+  const submittedIds = Object.keys(submitted);
+  if (submittedIds.length !== questionIds.size || submittedIds.some((id) => !questionIds.has(id))) {
+    throw new Error("Complete every assessment question before submitting your result.");
+  }
+  for (const question of allQuestions) {
+    if (!question.options.some(([value]) => value === submitted[question.id])) {
+      throw new Error("One or more submitted answers are not valid for this assessment.");
+    }
+  }
   const sectionScores = {};
   const details = {};
   for (const section of ASSESSMENT_SECTIONS) {
@@ -44,12 +86,11 @@ export async function saveAssessment({ answers, integrityEvents = [], mediaEvent
     counts[item.difficulty] = (counts[item.difficulty] || 0) + 1;
     return counts;
   }, {});
-  const permittedMediaEvents = new Set(["camera-track-muted", "camera-track-unmuted", "camera-track-ended", "microphone-track-muted", "microphone-track-unmuted", "microphone-track-ended"]);
-  if (!Array.isArray(mediaEvents) || mediaEvents.length > 100 || mediaEvents.some((event) => !event || !permittedMediaEvents.has(event.type))) {
-    throw new Error("Assessment media-monitoring event data is invalid. Please restart the assessment.");
-  }
-  const savedIntegrityEvents = [...integrityEvents, ...mediaEvents.map(({ type, at }) => ({ type, at: typeof at === "string" ? at.slice(0, 40) : null }))];
-  const integrityScore = Math.max(0, 100 - integrityEvents.length * 15);
-  const attempt = await db.prepAssessmentAttempt.create({ data: { profileId: profile.id, overallScore, sectionScores: JSON.stringify(sectionScores), skillProfile: JSON.stringify(skillProfile), strengths: JSON.stringify(strengths), weaknesses: JSON.stringify(weaknesses), careerProfile: JSON.stringify(careerProfile), answers: JSON.stringify(details), difficultyMix: JSON.stringify(difficultyMix), integrityEvents: JSON.stringify(savedIntegrityEvents), integrityScore, reviewRequired: savedIntegrityEvents.length > 0 } });
+  const savedIntegrityEvents = [
+    ...parsed.data.integrityEvents,
+    ...parsed.data.mediaEvents.map(({ type, at }) => ({ type, at: at || null })),
+  ];
+  const integrityScore = Math.max(0, 100 - parsed.data.integrityEvents.length * 15);
+  const attempt = await db.prepAssessmentAttempt.create({ data: { profileId: profile.id, overallScore, sectionScores: JSON.stringify(sectionScores), skillProfile: JSON.stringify(skillProfile), strengths: JSON.stringify(strengths), weaknesses: JSON.stringify(weaknesses), careerProfile: JSON.stringify(careerProfile), answers: JSON.stringify(details), difficultyMix: JSON.stringify(difficultyMix), integrityEvents: JSON.stringify(savedIntegrityEvents), integrityScore, reviewRequired: savedIntegrityEvents.length > 0, questionBankVersion: QUESTION_BANK_VERSION } });
   return { attempt, sectionScores, skillProfile, strengths, weaknesses, careerProfile, overallScore };
 }

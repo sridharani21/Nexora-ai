@@ -2,7 +2,44 @@
 
 import { db } from "@/lib/prisma";
 import { LEVEL_SKILLS, evaluateSkill, levelName } from "@/data/prep-levels";
+import { PRACTICE_QUESTIONS } from "@/data/prep-practice";
 import { requirePrepStudentProfile } from "@/lib/prep-student-profile";
+
+const questionsById = new Map(PRACTICE_QUESTIONS.map((question) => [question.id, question]));
+
+function skillAttemptsFor(attempts, skillId) {
+  const mapped = [];
+  for (const attempt of attempts) {
+    let questionIds = [];
+    let answers = {};
+    try {
+      questionIds = JSON.parse(attempt.questionIds || "[]");
+      answers = JSON.parse(attempt.answers || "{}");
+    } catch {
+      questionIds = [];
+      answers = {};
+    }
+    if (!Array.isArray(questionIds) || !answers || typeof answers !== "object" || Array.isArray(answers)) {
+      questionIds = [];
+      answers = {};
+    }
+
+    const skillQuestions = questionIds
+      .map((questionId) => questionsById.get(questionId))
+      .filter((question) => question && question.subject === skillId && Object.hasOwn(answers, question.id));
+    if (skillQuestions.length) {
+      const correct = skillQuestions.filter((question) => answers[question.id] === question.answer).length;
+      mapped.push({
+        ...attempt,
+        score: Math.round((correct / skillQuestions.length) * 100),
+        topics: [...new Set(skillQuestions.map((question) => question.topic))],
+      });
+    } else if (attempt.subject === skillId && Number.isFinite(attempt.score)) {
+      mapped.push({ ...attempt, topics: [attempt.topic] });
+    }
+  }
+  return mapped;
+}
 
 export async function getSkillLevels() {
   const { id } = await requirePrepStudentProfile();
@@ -14,9 +51,13 @@ export async function getSkillLevels() {
   const storedBySkill = new Map(stored.map((item) => [item.skill, item]));
   const evaluated = [];
   for (const skill of LEVEL_SKILLS) {
-    const skillAttempts = attempts.filter((attempt) => attempt.subject === skill.id);
+    const skillAttempts = skillAttemptsFor(attempts, skill.id);
     const previous = storedBySkill.get(skill.id);
     const result = evaluateSkill(skill, skillAttempts, previous?.currentLevel || 1);
+    if (!result.hasEvidence) {
+      evaluated.push({ ...skill, ...result, attempts: 0 });
+      continue;
+    }
     if (!previous || previous.currentLevel !== result.currentLevel || previous.levelScore !== result.levelScore || previous.topicCoverage !== result.topicCoverage || previous.recommendedDifficulty !== result.recommendedDifficulty) {
       await db.prepStudentSkillLevel.upsert({
         where: { profileId_skill: { profileId: id, skill: skill.id } },

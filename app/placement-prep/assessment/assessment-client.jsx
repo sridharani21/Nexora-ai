@@ -13,25 +13,51 @@ export default function AssessmentClient({ access }) {
   const [saving, setSaving] = useState(false), [events, setEvents] = useState([]);
   const [mediaEvents, setMediaEvents] = useState([]);
   const [camera, setCamera] = useState(false), [mic, setMic] = useState(false), [full, setFull] = useState(false);
+  const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [locked, setLocked] = useState(!access.allowed), [until, setUntil] = useState(access.lockedUntil);
-  const streamRef = useRef(null), videoRef = useRef(null);
   const section = ASSESSMENT_SECTIONS[sectionIndex], question = section.questions[questionIndex];
+  const streamRef = useRef(null), videoRef = useRef(null);
+  const eventCountRef = useRef(0), lockTriggeredRef = useRef(false);
+  const questionIdRef = useRef(question.id);
+  questionIdRef.current = question.id;
   useEffect(() => {
-    if (locked) return undefined;
+    if (locked || !assessmentStarted) return undefined;
+    let active = true;
     const register = (type) => {
+      if (!active) return;
       const event = { type, at: new Date().toISOString() };
-      setEvents((current) => { const next = [...current, event]; if (next.length === 5) lockAssessment().then((lock) => { setUntil(lock.lockedUntil); setLocked(true); }); return next; });
-      recordIntegrityEvent(type, { questionId: question.id }).catch(() => setError("Integrity event could not be stored."));
+      eventCountRef.current += 1;
+      setEvents((current) => [...current, event]);
+      recordIntegrityEvent(type, { questionId: questionIdRef.current }).catch(() => setError("Integrity event could not be stored."));
+      if (eventCountRef.current >= 5 && !lockTriggeredRef.current) {
+        lockTriggeredRef.current = true;
+        lockAssessment().then((lock) => { setUntil(lock.lockedUntil); setLocked(true); }).catch(() => {
+          setError("Assessment lock could not be recorded. Your assessment has been paused; reload after checking your connection.");
+        });
+      }
     };
     const visibility = () => document.hidden && register("tab-hidden");
     const blur = () => register("window-blur");
     const block = (event, type) => { event.preventDefault(); register(type); };
     const fullscreen = () => { setFull(Boolean(document.fullscreenElement)); if (!document.fullscreenElement) register("fullscreen-exited"); };
     document.addEventListener("visibilitychange", visibility); window.addEventListener("blur", blur);
-    document.addEventListener("copy", (e) => block(e, "copy-blocked")); document.addEventListener("paste", (e) => block(e, "paste-blocked"));
-    document.addEventListener("contextmenu", (e) => block(e, "context-menu-blocked")); document.addEventListener("fullscreenchange", fullscreen);
-    return () => { document.removeEventListener("visibilitychange", visibility); window.removeEventListener("blur", blur); document.removeEventListener("fullscreenchange", fullscreen); };
-  }, [locked, question.id]);
+    const onCopy = (event) => block(event, "copy-blocked");
+    const onPaste = (event) => block(event, "paste-blocked");
+    const onContextMenu = (event) => block(event, "context-menu-blocked");
+    document.addEventListener("copy", onCopy);
+    document.addEventListener("paste", onPaste);
+    document.addEventListener("contextmenu", onContextMenu);
+    document.addEventListener("fullscreenchange", fullscreen);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", visibility);
+      window.removeEventListener("blur", blur);
+      document.removeEventListener("copy", onCopy);
+      document.removeEventListener("paste", onPaste);
+      document.removeEventListener("contextmenu", onContextMenu);
+      document.removeEventListener("fullscreenchange", fullscreen);
+    };
+  }, [locked, assessmentStarted]);
   useEffect(() => {
     const stream = streamRef.current;
     if (!stream || locked || result) return undefined;
@@ -77,6 +103,7 @@ export default function AssessmentClient({ access }) {
       streamRef.current = stream;
       setCamera(stream.getVideoTracks().some((track) => track.readyState === "live" && !track.muted));
       setMic(stream.getAudioTracks().some((track) => track.readyState === "live" && !track.muted));
+      setAssessmentStarted(true);
       setError("");
     } catch {
       setError("Fullscreen, camera, and microphone permission are required.");

@@ -408,6 +408,8 @@ model PrepStudentProfile {
   education              String?
   skills                 String                     @default("")
   languages              String                     @default("")
+  projects               String                     @default("")
+  certifications         String                     @default("")
   interests              String                     @default("")
   preferredRole          String?
   targetCompany          String?
@@ -418,6 +420,7 @@ model PrepStudentProfile {
   assessments            PrepAssessmentAttempt[]
   integrityEvents        PrepAssessmentIntegrityEvent[]
   readiness              PrepPlacementReadiness?
+  readinessSnapshots     PrepPlacementReadinessSnapshot[]
   preparationPlans       PrepPreparationPlan[]
   practiceAttempts       PrepPracticeAttempt[]
   skillLevels            PrepStudentSkillLevel[]
@@ -446,16 +449,32 @@ model PrepPlacementReadiness {
   codingReadiness       Int
   aptitudeReadiness     Int
   communicationScore    Int
-  interviewReadiness    Int
-  resumeReadiness       Int
+  interviewReadiness    Int?
+  resumeReadiness       Int?
   status                String
   skillProfile          String
   skillGaps             String
   careerSuitability     String
   preparationPriorities String
+  scoreComponents       String             @default("{}")
+  formulaVersion        String             @default("placement-score-v1")
   sourceAttemptId       String?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
+}
+
+model PrepPlacementReadinessSnapshot {
+  id                String            @id @default(cuid())
+  profileId         String
+  profile           PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  overallReadiness  Int
+  formulaVersion    String
+  sourceAttemptId   String?
+  componentScores   String
+  analysisData      String
+  createdAt         DateTime          @default(now())
+
+  @@index([profileId, createdAt])
 }
 
 model PrepPreparationPlan {
@@ -649,6 +668,7 @@ model PrepAssessmentAttempt {
   integrityEvents  String            @default("[]")
   integrityScore   Int               @default(100)
   reviewRequired   Boolean           @default(false)
+  questionBankVersion String         @default("diagnostic-v1")
   completedAt      DateTime          @default(now())
 
   @@index([profileId, completedAt])
