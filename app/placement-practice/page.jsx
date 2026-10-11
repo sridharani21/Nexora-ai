@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getPracticeCenter } from "@/actions/placement-practice";
-import { PLACEMENT_PRACTICE_QUESTIONS } from "@/data/placement-practice";
+import {
+  createPlacementPracticeQuestionSet,
+  getPracticeCenter,
+} from "@/actions/placement-practice";
 import PracticeCenter from "./practice-center";
 
 export const metadata = {
@@ -19,9 +21,18 @@ export default async function PlacementPracticePage() {
     data = await getPracticeCenter();
   } catch (error) {
     if (error instanceof Error && error.message.includes("Complete your placement profile")) {
-      redirect("/placement-journey");
+      redirect("/");
     }
     throw error;
+  }
+
+  let initialQuestionSet = null;
+  let initialQuestionError = null;
+  try {
+    initialQuestionSet = await createPlacementPracticeQuestionSet(data.topics[0]?.id);
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    initialQuestionError = error.message;
   }
 
   return (
@@ -32,7 +43,13 @@ export default async function PlacementPracticePage() {
         <h1 className="gradient-title text-4xl font-bold">Practise what matters for your placement</h1>
         <p className="text-muted-foreground">Choose a topic, work through a focused set, and keep your mistakes ready for future intelligent analysis.</p>
       </div>
-      <PracticeCenter topics={data.topics} questions={PLACEMENT_PRACTICE_QUESTIONS} attempts={data.attempts} profile={data.profile} />
+      <PracticeCenter
+        topics={data.topics}
+        initialQuestionSet={initialQuestionSet}
+        initialQuestionError={initialQuestionError}
+        attempts={data.attempts}
+        profile={data.profile}
+      />
     </main>
   );
 }

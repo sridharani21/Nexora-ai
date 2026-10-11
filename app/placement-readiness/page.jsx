@@ -19,7 +19,7 @@ export default async function PlacementReadinessPage() {
     data = await getPlacementReadiness();
   } catch (error) {
     if (error instanceof Error && error.message.includes("Complete your placement profile")) {
-      redirect("/placement-journey");
+      redirect("/");
     }
     throw error;
   }

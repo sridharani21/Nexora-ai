@@ -100,7 +100,7 @@ const Header = async () => {
                     </SignedIn>
 
                     <SignedOut>
-                        <SignInButton mode="modal" fallbackRedirectUrl="/placement-journey">
+                        <SignInButton mode="modal" fallbackRedirectUrl="/">
                             <Button variant="outline">Sign In</Button>
                         </SignInButton>
                     </SignedOut>

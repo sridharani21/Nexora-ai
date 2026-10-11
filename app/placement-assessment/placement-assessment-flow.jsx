@@ -5,11 +5,10 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { savePlacementAssessment } from "@/actions/placement-assessment";
-import { PLACEMENT_ASSESSMENT_SECTIONS } from "@/data/placement-assessment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function PlacementAssessmentFlow({ latest, careerTwin }) {
+export default function PlacementAssessmentFlow({ latest, careerTwin, questionSet }) {
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -20,27 +19,27 @@ export default function PlacementAssessmentFlow({ latest, careerTwin }) {
     const rank = { foundation: 0, intermediate: 1, advanced: 2 };
     const targetRank = rank[careerTwin?.dsaLevel ?? "foundation"] ?? 0;
     return Object.fromEntries(
-      PLACEMENT_ASSESSMENT_SECTIONS.map((item) => [
+      questionSet.sections.map((item) => [
         item.id,
         [...item.questions]
           .sort((first, second) =>
-            Math.abs((rank[first.difficulty ?? "foundation"] ?? 0) - targetRank) -
-            Math.abs((rank[second.difficulty ?? "foundation"] ?? 0) - targetRank)
+            Math.abs((rank[difficultyLevel(first.difficulty)] ?? 0) - targetRank) -
+            Math.abs((rank[difficultyLevel(second.difficulty)] ?? 0) - targetRank)
           )
           .map((item) => item.id),
       ])
     );
-  }, [careerTwin]);
+  }, [careerTwin, questionSet]);
   const [questionOrders, setQuestionOrders] = useState(initialQuestionOrders);
-  const section = PLACEMENT_ASSESSMENT_SECTIONS[sectionIndex];
+  const section = questionSet.sections[sectionIndex];
   const question = section.questions.find(
     (item) => item.id === questionOrders[section.id]?.[questionIndex]
   ) ?? section.questions[questionIndex];
-  const totalQuestions = PLACEMENT_ASSESSMENT_SECTIONS.reduce((sum, item) => sum + item.questions.length, 0);
+  const totalQuestions = questionSet.sections.reduce((sum, item) => sum + item.questions.length, 0);
   const answeredCount = Object.keys(answers).length;
   const progress = Math.round((answeredCount / totalQuestions) * 100);
   const isLastQuestion = questionIndex === section.questions.length - 1;
-  const isLastSection = sectionIndex === PLACEMENT_ASSESSMENT_SECTIONS.length - 1;
+  const isLastSection = sectionIndex === questionSet.sections.length - 1;
 
   const previousAttempt = useMemo(() => {
     if (!latest) return null;
@@ -57,7 +56,11 @@ export default function PlacementAssessmentFlow({ latest, careerTwin }) {
   const finish = async () => {
     setSaving(true);
     try {
-      const saved = await savePlacementAssessment({ answers, adaptiveTrail });
+      const saved = await savePlacementAssessment({
+        questionSetId: questionSet.id,
+        answers,
+        adaptiveTrail,
+      });
       setResult(saved);
       toast.success("Assessment saved to your placement journey.");
     } catch (error) {
@@ -81,14 +84,14 @@ export default function PlacementAssessmentFlow({ latest, careerTwin }) {
       (item) => item.id !== question.id && !answers[item.id]
     );
     const rank = { foundation: 0, intermediate: 1, advanced: 2 };
-    const currentRank = rank[question.difficulty ?? "foundation"] ?? 0;
+    const currentRank = rank[difficultyLevel(question.difficulty)] ?? 0;
     const targetRank = Math.max(0, Math.min(2, currentRank + (isCorrect ? 1 : -1)));
     const nextOrder = [
       question.id,
       ...remaining
         .sort((first, second) =>
-          Math.abs((rank[first.difficulty ?? "foundation"] ?? 0) - targetRank) -
-          Math.abs((rank[second.difficulty ?? "foundation"] ?? 0) - targetRank)
+          Math.abs((rank[difficultyLevel(first.difficulty)] ?? 0) - targetRank) -
+          Math.abs((rank[difficultyLevel(second.difficulty)] ?? 0) - targetRank)
         )
         .map((item) => item.id),
     ];
@@ -151,7 +154,7 @@ export default function PlacementAssessmentFlow({ latest, careerTwin }) {
     <main className="container mx-auto max-w-3xl px-4 py-10">
       <div className="mb-8 space-y-3">
         <Link href="/placement-dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Dashboard</Link>
-        <p className="text-sm font-medium text-primary">Modules 3–5 of 21 · Diagnostic loop {progress}% complete</p>
+        <p className="text-sm font-medium text-primary">Modules 3–5 of 21 · Fresh Gemini assessment · {progress}% complete</p>
         <h1 className="gradient-title text-4xl font-bold">{section.title}</h1>
         <p className="text-muted-foreground">{section.description}</p>
         <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} /></div>
@@ -162,7 +165,7 @@ export default function PlacementAssessmentFlow({ latest, careerTwin }) {
       <Card>
       <CardHeader>
         <CardDescription>
-          Question {questionIndex + 1} of {section.questions.length} · Adaptive difficulty: {question.difficulty ?? "foundation"}
+          Question {questionIndex + 1} of {section.questions.length} · Adaptive difficulty: {question.difficulty}
         </CardDescription>
         <CardTitle>{question.prompt}</CardTitle>
       </CardHeader>
@@ -179,6 +182,10 @@ export default function PlacementAssessmentFlow({ latest, careerTwin }) {
       </Card>
     </main>
   );
+}
+
+function difficultyLevel(difficulty) {
+  return { easy: "foundation", medium: "intermediate", hard: "advanced" }[difficulty] ?? "foundation";
 }
 
 function ResultMetric({ label, value }) {

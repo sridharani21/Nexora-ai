@@ -1,6 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getPlacementAssessment } from "@/actions/placement-assessment";
+import {
+  createPlacementAssessmentQuestionSet,
+  getPlacementAssessment,
+} from "@/actions/placement-assessment";
 import PlacementAssessmentFlow from "./placement-assessment-flow";
 
 export const metadata = {
@@ -17,10 +20,17 @@ export default async function PlacementAssessmentPage() {
     data = await getPlacementAssessment();
   } catch (error) {
     if (error.message.includes("Complete your placement profile")) {
-      redirect("/placement-journey");
+      redirect("/");
     }
     throw error;
   }
 
-  return <PlacementAssessmentFlow latest={data.latest} careerTwin={data.careerTwin} />;
+  const questionSet = await createPlacementAssessmentQuestionSet();
+  return (
+    <PlacementAssessmentFlow
+      latest={data.latest}
+      careerTwin={data.careerTwin}
+      questionSet={questionSet}
+    />
+  );
 }

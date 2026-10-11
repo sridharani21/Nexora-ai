@@ -4,11 +4,17 @@ import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { getPracticeQuestions, PLACEMENT_PRACTICE_TOPICS } from "@/data/placement-practice";
+import {
+  claimQuestionSet,
+  createGeneratedQuestionSet,
+  getOwnedQuestionSet,
+} from "@/lib/prep-question-generation";
 
 const practiceSchema = z.object({
   topic: z.string().min(1),
   category: z.string().min(1),
   answers: z.record(z.string(), z.string()),
+  questionSetId: z.string().min(1).max(100),
   mode: z.enum(["practice", "company-pattern"]).default("practice"),
   companyPattern: z.string().max(100).optional(),
   timed: z.boolean().default(false),
@@ -41,6 +47,24 @@ function levelForScore(score) {
   return "foundation";
 }
 
+async function getPlacementJourney(userId) {
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: {
+      placementJourney: {
+        select: {
+          id: true,
+          profile: { select: { id: true } },
+        },
+      },
+    },
+  });
+  if (!user?.placementJourney?.profile) {
+    throw new Error("Complete your placement profile before practising.");
+  }
+  return user.placementJourney;
+}
+
 export async function getPracticeCenter() {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -71,6 +95,36 @@ export async function getPracticeCenter() {
   };
 }
 
+export async function createPlacementPracticeQuestionSet(topicId) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  await getPlacementJourney(userId);
+
+  const topic = PLACEMENT_PRACTICE_TOPICS.find((item) => item.id === topicId);
+  if (!topic) throw new Error("Choose a valid practice topic.");
+  const questionCount = getPracticeQuestions(topic.id).length;
+  const questionSet = await createGeneratedQuestionSet({
+    ownerId: userId,
+    purpose: "placement-practice",
+    questionCount,
+    sections: [{
+      id: "practice",
+      count: questionCount,
+      subject: topic.id,
+      allowedSubjects: [topic.id],
+      topic: topic.id,
+    }],
+    instructions: `Generate exactly ${questionCount} fresh placement-practice questions for ${topic.label}.`,
+  });
+  return {
+    id: questionSet.id,
+    questions: questionSet.questions.map((question) => ({
+      ...question,
+      options: question.options.map(([value, label]) => ({ value, label })),
+    })),
+  };
+}
+
 export async function savePracticeAttempt(input) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -78,11 +132,23 @@ export async function savePracticeAttempt(input) {
   const topic = PLACEMENT_PRACTICE_TOPICS.find((item) => item.id === values.topic);
   if (!topic || topic.category !== values.category) throw new Error("Choose a valid practice topic.");
 
-  const questions = getPracticeQuestions(values.topic);
+  const journey = await getPlacementJourney(userId);
+  const questionSet = await getOwnedQuestionSet({
+    ownerId: userId,
+    questionSetId: values.questionSetId,
+    purpose: "placement-practice",
+  });
+  const questions = questionSet.questions;
+  if (questions.some((question) => question.sectionId !== "practice" || question.topic !== values.topic)) {
+    throw new Error("This generated question set does not match the selected topic.");
+  }
   const expectedIds = new Set(questions.map((question) => question.id));
   const submittedIds = Object.keys(values.answers);
   if (submittedIds.length !== questions.length || submittedIds.some((id) => !expectedIds.has(id))) {
     throw new Error("Answer every question before submitting.");
+  }
+  if (questions.some((question) => !question.options.some(([value]) => value === values.answers[question.id]))) {
+    throw new Error("One or more submitted answers are not valid for this practice set.");
   }
 
   const mistakes = questions
@@ -98,43 +164,46 @@ export async function savePracticeAttempt(input) {
   const score = Math.round((correctCount / questions.length) * 100);
   const weakTopics = mistakes.length ? [topic.label] : [];
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-    select: {
-      placementJourney: {
-        select: { id: true, currentModule: true, careerTwin: true },
+  const attempt = await db.$transaction(async (transaction) => {
+    await claimQuestionSet({
+      transaction,
+      ownerId: userId,
+      questionSetId: values.questionSetId,
+      purpose: "placement-practice",
+    });
+    return transaction.practiceAttempt.create({
+      data: {
+        journeyId: journey.id,
+        category: values.category,
+        topic: values.topic,
+        mode: values.mode,
+        companyPattern: values.companyPattern || null,
+        timed: values.timed,
+        difficulty: values.difficulty,
+        questionCount: questions.length,
+        correctCount,
+        score,
+        durationSeconds: values.durationSeconds ?? null,
+        answers: values.answers,
+        mistakes,
+        weakTopics,
       },
-    },
-  });
-  if (!user?.placementJourney) throw new Error("Placement journey not found.");
-
-  const attempt = await db.practiceAttempt.create({
-    data: {
-      journeyId: user.placementJourney.id,
-      category: values.category,
-      topic: values.topic,
-      mode: values.mode,
-      companyPattern: values.companyPattern || null,
-      timed: values.timed,
-      difficulty: values.difficulty,
-      questionCount: questions.length,
-      correctCount,
-      score,
-      durationSeconds: values.durationSeconds ?? null,
-      answers: values.answers,
-      mistakes,
-      weakTopics,
-    },
+    });
   });
 
-  const previousTwin = user.placementJourney.careerTwin;
+  const currentJourney = await db.placementJourney.findUnique({
+    where: { id: journey.id },
+    select: { currentModule: true, careerTwin: true },
+  });
+  if (!currentJourney) throw new Error("Placement journey not found.");
+  const previousTwin = currentJourney.careerTwin;
   const previousScores = asObject(previousTwin?.skillScores);
   const twinSkill = TOPIC_TO_TWIN_SKILL[values.topic] ?? "Technical";
   const priorScore = Number(previousScores[twinSkill] ?? score);
   const updatedScore = Math.round(priorScore * 0.6 + score * 0.4);
   const skillScores = { ...previousScores, [twinSkill]: updatedScore };
   const recentAttempts = await db.practiceAttempt.findMany({
-    where: { journeyId: user.placementJourney.id, topic: values.topic },
+    where: { journeyId: journey.id, topic: values.topic },
     orderBy: { completedAt: "desc" },
     take: 5,
     select: { score: true, mistakes: true, completedAt: true },
@@ -189,13 +258,13 @@ export async function savePracticeAttempt(input) {
   };
   const careerTwin = previousTwin
     ? await db.careerTwin.update({
-      where: { journeyId: user.placementJourney.id },
+      where: { journeyId: journey.id },
       data: { ...twinData, version: { increment: 1 } },
     })
     : null;
   await db.placementJourney.update({
-    where: { id: user.placementJourney.id },
-    data: { status: "active", currentModule: Math.max(user.placementJourney.currentModule, 5) },
+    where: { id: journey.id },
+    data: { status: "active", currentModule: Math.max(currentJourney.currentModule, 5) },
   });
   return {
     attempt,

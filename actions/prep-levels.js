@@ -5,27 +5,32 @@ import { LEVEL_SKILLS, evaluateSkill, levelName } from "@/data/prep-levels";
 import { PRACTICE_QUESTIONS } from "@/data/prep-practice";
 import { requirePrepStudentProfile } from "@/lib/prep-student-profile";
 
-const questionsById = new Map(PRACTICE_QUESTIONS.map((question) => [question.id, question]));
-
 function skillAttemptsFor(attempts, skillId) {
   const mapped = [];
   for (const attempt of attempts) {
     let questionIds = [];
     let answers = {};
+    let savedQuestions = [];
     try {
       questionIds = JSON.parse(attempt.questionIds || "[]");
       answers = JSON.parse(attempt.answers || "{}");
+      savedQuestions = JSON.parse(attempt.questionData || "[]");
     } catch {
       questionIds = [];
       answers = {};
+      savedQuestions = [];
     }
     if (!Array.isArray(questionIds) || !answers || typeof answers !== "object" || Array.isArray(answers)) {
       questionIds = [];
       answers = {};
     }
 
+    const questionsForAttempt = new Map(
+      [...(Array.isArray(savedQuestions) ? savedQuestions : []), ...PRACTICE_QUESTIONS]
+        .map((question) => [question.id, question]),
+    );
     const skillQuestions = questionIds
-      .map((questionId) => questionsById.get(questionId))
+      .map((questionId) => questionsForAttempt.get(questionId))
       .filter((question) => question && question.subject === skillId && Object.hasOwn(answers, question.id));
     if (skillQuestions.length) {
       const correct = skillQuestions.filter((question) => answers[question.id] === question.answer).length;

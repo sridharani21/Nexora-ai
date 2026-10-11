@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { PRACTICE_QUESTIONS, PRACTICE_SUBJECTS } from "@/data/prep-practice";
 import { requirePrepStudentProfile } from "@/lib/prep-student-profile";
+import { claimQuestionSet, createGeneratedQuestionSet, getOwnedQuestionSet } from "@/lib/prep-question-generation";
 
 const practiceAttemptSchema = z.object({
   subject: z.string().max(40),
@@ -12,7 +13,13 @@ const practiceAttemptSchema = z.object({
   mode: z.enum(["PRACTICE", "TIMED", "COMPANY_PATTERN", "MISTAKE_REVIEW"]),
   answers: z.record(z.string(), z.string()),
   durationSeconds: z.number().int().min(0).max(8 * 60 * 60),
-  questionIds: z.array(z.string().min(1).max(100)).min(1).max(30),
+  questionSetId: z.string().min(1).max(100),
+});
+const questionSetSchema = z.object({
+  subject: z.string().max(40),
+  topic: z.string().max(120),
+  difficulty: z.enum(["all", "easy", "medium", "hard"]),
+  questionCount: z.number().int().refine((count) => [10, 15, 20, 25, 30].includes(count)),
 });
 
 async function currentProfile() {
@@ -83,9 +90,71 @@ export async function getPracticeData() {
   return { attempts: normalizedAttempts, weakTopics, usedQuestionIds, mistakeQuestionIds: [...latestQuestionState].filter(([, due]) => due).map(([questionId]) => questionId) };
 }
 
-export async function savePracticeAttempt({ subject, topic, difficulty, mode, answers, durationSeconds, questionIds }) {
+export async function createPracticeQuestionSet(input) {
   const profile = await currentProfile();
-  const parsed = practiceAttemptSchema.safeParse({ subject, topic, difficulty, mode, answers, durationSeconds, questionIds });
+  const parsed = questionSetSchema.safeParse(input);
+  if (!parsed.success) throw new Error("Practice question-set details are invalid.");
+  const { subject, topic, difficulty, questionCount } = parsed.data;
+  const allowedSubjects = new Set(["mixed", "mistakes", ...PRACTICE_SUBJECTS.map((item) => item.id)]);
+  if (!allowedSubjects.has(subject)) throw new Error("Choose a valid practice subject.");
+  if (subject === "mistakes" && !topic) throw new Error("Choose a mistake topic to generate remedial practice.");
+  const selectedSubject = PRACTICE_SUBJECTS.find((item) => item.id === subject);
+  if (selectedSubject && topic && !selectedSubject.topics.includes(topic)) {
+    throw new Error("Choose a valid topic for this practice subject.");
+  }
+
+  let allowedTopics;
+  let allowedPracticeSubjects;
+  if (subject === "mistakes") {
+    const attempts = await db.prepPracticeAttempt.findMany({
+      where: { profileId: profile.id },
+      orderBy: { completedAt: "desc" },
+      select: { mistakes: true },
+    });
+    const priorMistakes = attempts.flatMap((attempt) => {
+      try {
+        const mistakes = JSON.parse(attempt.mistakes || "[]");
+        return Array.isArray(mistakes) ? mistakes : [];
+      } catch {
+        throw new Error("Saved mistake history is invalid. Please contact support.");
+      }
+    });
+    allowedTopics = [...new Set(priorMistakes.map((mistake) => mistake.topic).filter(Boolean))];
+    if (!allowedTopics.includes(topic)) throw new Error("That topic is not in your saved Mistake Bank.");
+    allowedPracticeSubjects = [...new Set(priorMistakes
+      .filter((mistake) => mistake.topic === topic)
+      .map((mistake) => mistake.subject || PRACTICE_QUESTIONS.find((question) => question.id === mistake.questionId)?.subject)
+      .filter((id) => PRACTICE_SUBJECTS.some((item) => item.id === id)))];
+  } else if (selectedSubject) {
+    allowedPracticeSubjects = [selectedSubject.id];
+    allowedTopics = topic ? [topic] : selectedSubject.topics;
+  } else {
+    allowedPracticeSubjects = PRACTICE_SUBJECTS.map((item) => item.id);
+    allowedTopics = PRACTICE_SUBJECTS.flatMap((item) => item.topics);
+  }
+  if (!allowedPracticeSubjects.length) throw new Error("No saved mistakes are available for that topic.");
+
+  return createGeneratedQuestionSet({
+    profileId: profile.id,
+    ownerId: profile.clerkUserId,
+    purpose: "practice",
+    questionCount,
+    sections: [{
+      id: "practice",
+      count: questionCount,
+      subject: allowedPracticeSubjects[0],
+      allowedSubjects: allowedPracticeSubjects,
+      allowedTopics,
+      ...(difficulty !== "all" ? { allowedDifficulties: [difficulty] } : {}),
+      ...(topic ? { topic } : {}),
+    }],
+    instructions: `Create ${questionCount} questions for ${subject === "mixed" ? "a mixed placement practice set" : subject === "mistakes" ? `remedial practice based on past mistakes about ${topic}` : `${selectedSubject.label}${topic ? `, specifically ${topic}` : ""}`}. Difficulty selection: ${difficulty}. ${difficulty === "all" ? "Mix easy, medium, and hard questions." : `Every question must be ${difficulty}.`} Use only the allowed subject and topic values from the section definition.`,
+  });
+}
+
+export async function savePracticeAttempt({ subject, topic, difficulty, mode, answers, durationSeconds, questionSetId }) {
+  const profile = await currentProfile();
+  const parsed = practiceAttemptSchema.safeParse({ subject, topic, difficulty, mode, answers, durationSeconds, questionSetId });
   if (!parsed.success) throw new Error("Practice attempt details are invalid.");
   const input = parsed.data;
   const allowedSubjects = new Set(["mixed", "mistakes", ...PRACTICE_SUBJECTS.map((item) => item.id)]);
@@ -93,29 +162,25 @@ export async function savePracticeAttempt({ subject, topic, difficulty, mode, an
   if ((input.subject === "mistakes") !== (input.mode === "MISTAKE_REVIEW")) {
     throw new Error("Mistake review mode must use the Mistake Bank, and the Mistake Bank requires mistake review mode.");
   }
-  if (new Set(input.questionIds).size !== input.questionIds.length) {
-    throw new Error("A practice attempt cannot contain duplicate questions.");
-  }
-  const questionsById = new Map(PRACTICE_QUESTIONS.map((question) => [question.id, question]));
-  const questionSet = input.questionIds.map((id) => questionsById.get(id));
-  if (questionSet.some((question) => !question)) {
-    throw new Error("One or more selected questions are not in the approved question bank.");
-  }
-  const matchesSubject = (question) => input.subject === "mixed" || input.subject === "mistakes" || question.subject === input.subject;
-  if (questionSet.some((question) =>
-    !matchesSubject(question) ||
+  const questionSet = await getOwnedQuestionSet({ ownerId: profile.clerkUserId, questionSetId: input.questionSetId, purpose: "practice" });
+  const questions = questionSet.questions;
+  if (questions.length < 1 || questions.length > 30) throw new Error("The generated practice question count is invalid.");
+  if (questions.some((question) =>
+    (input.subject !== "mixed" && input.subject !== "mistakes" && question.subject !== input.subject) ||
     (input.difficulty !== "all" && question.difficulty !== input.difficulty) ||
     (input.topic && question.topic !== input.topic)
   )) {
-    throw new Error("The selected questions do not match the requested subject, topic, or difficulty.");
+    throw new Error("The generated questions do not match the requested subject, topic, or difficulty.");
   }
-  if (!questionSet.length) throw new Error("No practice questions are configured for this subject yet.");
   const submitted = input.answers;
-  if (Object.keys(submitted).length !== questionSet.length ||
-      questionSet.some((question) => !question.options.some(([value]) => value === submitted[question.id]))) {
-    throw new Error("Answer every selected question using one of its available options before submitting.");
+  if (Object.keys(submitted).length !== questions.length ||
+      questions.some((question) => !Object.hasOwn(submitted, question.id) || !question.options.some(([value]) => value === submitted[question.id]))) {
+    throw new Error("Answer every generated question using one of its available options before submitting.");
   }
-  const mistakes = questionSet.filter((question) => submitted[question.id] !== question.answer).map((question) => ({ questionId: question.id, topic: question.topic, prompt: question.prompt, correct: question.answer, selected: submitted[question.id] || null, explanation: `This tests ${question.topic}. Review the underlying concept, then retry the question without memorizing the option.` }));
-  const score = Math.round(((questionSet.length - mistakes.length) / questionSet.length) * 100);
-  return db.prepPracticeAttempt.create({ data: { profileId: profile.id, subject: input.subject, topic: input.topic || "mixed", mode: input.mode, difficulty: input.difficulty, score, totalQuestions: questionSet.length, durationSeconds: input.durationSeconds, questionIds: JSON.stringify(questionSet.map((question) => question.id)), answers: JSON.stringify(submitted), mistakes: JSON.stringify(mistakes) } });
+  const mistakes = questions.filter((question) => submitted[question.id] !== question.answer).map((question) => ({ questionId: question.id, subject: question.subject, topic: question.topic, prompt: question.prompt, correct: question.answer, selected: submitted[question.id] || null, explanation: `This tests ${question.topic}. Review the underlying concept, then try a new question on the topic.` }));
+  const score = Math.round(((questions.length - mistakes.length) / questions.length) * 100);
+  return db.$transaction(async (transaction) => {
+    await claimQuestionSet({ transaction, ownerId: profile.clerkUserId, questionSetId: input.questionSetId, purpose: "practice" });
+    return transaction.prepPracticeAttempt.create({ data: { profileId: profile.id, subject: input.subject, topic: input.topic || "mixed", mode: input.mode, difficulty: input.difficulty, score, totalQuestions: questions.length, durationSeconds: input.durationSeconds, questionIds: JSON.stringify(questions.map((question) => question.id)), questionData: JSON.stringify(questions), answers: JSON.stringify(submitted), mistakes: JSON.stringify(mistakes) } });
+  });
 }

@@ -1,17 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clock3, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { savePracticeAttempt } from "@/actions/placement-practice";
+import {
+  createPlacementPracticeQuestionSet,
+  savePracticeAttempt,
+} from "@/actions/placement-practice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const COMPANY_PATTERNS = ["General placement", "Product company", "Service company", "Startup screening"];
 
-export default function PracticeCenter({ topics, questions, attempts: initialAttempts, profile }) {
+export default function PracticeCenter({
+  topics,
+  initialQuestionSet,
+  initialQuestionError,
+  attempts: initialAttempts,
+  profile,
+}) {
   const [topicId, setTopicId] = useState(topics[0]?.id);
+  const [topicQuestions, setTopicQuestions] = useState(initialQuestionSet?.questions ?? []);
+  const [questionSetId, setQuestionSetId] = useState(initialQuestionSet?.id ?? null);
   const [answers, setAnswers] = useState({});
   const [timed, setTimed] = useState(false);
   const [mode, setMode] = useState("practice");
@@ -21,25 +32,50 @@ export default function PracticeCenter({ topics, questions, attempts: initialAtt
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState(null);
   const [attempts, setAttempts] = useState(initialAttempts ?? []);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [questionError, setQuestionError] = useState(initialQuestionError);
+  const requestId = useRef(0);
 
   const topic = topics.find((item) => item.id === topicId) ?? topics[0];
-  const topicQuestions = useMemo(() => questions.filter((question) => question.topic === topic?.id), [questions, topic]);
   const answeredCount = topicQuestions.filter((question) => answers[question.id]).length;
 
   useEffect(() => {
-    if (!timed || result) return undefined;
+    if (!timed || result || loadingQuestions) return undefined;
     const timer = setInterval(() => setSeconds((current) => current + 1), 1000);
     return () => clearInterval(timer);
-  }, [timed, result]);
+  }, [timed, result, loadingQuestions]);
 
-  const selectTopic = (value) => {
+  const selectTopic = async (value) => {
+    const currentRequestId = ++requestId.current;
     setTopicId(value);
     setAnswers({});
     setSeconds(0);
     setResult(null);
+    setQuestionSetId(null);
+    setTopicQuestions([]);
+    setQuestionError(null);
+    setLoadingQuestions(true);
+    try {
+      const questionSet = await createPlacementPracticeQuestionSet(value);
+      if (currentRequestId !== requestId.current) return;
+      setQuestionSetId(questionSet.id);
+      setTopicQuestions(questionSet.questions);
+    } catch (error) {
+      if (currentRequestId === requestId.current) {
+        const message = error instanceof Error ? error.message : "Unable to generate fresh questions.";
+        setQuestionError(message);
+        toast.error(message);
+      }
+    } finally {
+      if (currentRequestId === requestId.current) setLoadingQuestions(false);
+    }
   };
 
   const submit = async () => {
+    if (loadingQuestions || !questionSetId) {
+      toast.error("Generate a fresh question set before submitting.");
+      return;
+    }
     if (answeredCount !== topicQuestions.length) {
       toast.error("Answer every question before submitting.");
       return;
@@ -50,6 +86,7 @@ export default function PracticeCenter({ topics, questions, attempts: initialAtt
         topic: topic.id,
         category: topic.category,
         answers,
+        questionSetId,
         mode,
         companyPattern: mode === "company-pattern" ? companyPattern : undefined,
         timed,
@@ -66,22 +103,18 @@ export default function PracticeCenter({ topics, questions, attempts: initialAtt
     }
   };
 
-  const reset = () => {
-    setAnswers({});
-    setSeconds(0);
-    setResult(null);
-  };
+  const reset = () => selectTopic(topicId);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><CardTitle>Topic practice</CardTitle><CardDescription>{profile?.preferredRole ? `Personalised for ${profile.preferredRole}` : "Choose a topic to begin."}</CardDescription></div>
+            <div><CardTitle>Topic practice</CardTitle><CardDescription>{profile?.preferredRole ? `Personalised for ${profile.preferredRole} · Gemini generates a fresh set for each attempt.` : "Choose a topic to begin. Gemini generates fresh questions for every attempt."}</CardDescription></div>
             <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-sm"><Clock3 className="h-4 w-4" /> {formatTime(seconds)}</div>
           </div>
           <div className="grid gap-3 pt-3 sm:grid-cols-2">
-            <label className="text-sm font-medium">Topic<select value={topicId} onChange={(event) => selectTopic(event.target.value)} className="mt-1 w-full rounded-md border bg-background p-2 font-normal">{topics.map((item) => <option key={item.id} value={item.id}>{item.label} · {item.category}</option>)}</select></label>
+            <label className="text-sm font-medium">Topic<select value={topicId} disabled={loadingQuestions} onChange={(event) => selectTopic(event.target.value)} className="mt-1 w-full rounded-md border bg-background p-2 font-normal">{topics.map((item) => <option key={item.id} value={item.id}>{item.label} · {item.category}</option>)}</select></label>
             <label className="text-sm font-medium">Difficulty<select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="mt-1 w-full rounded-md border bg-background p-2 font-normal"><option value="adaptive">Adaptive</option><option value="foundation">Foundation</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label>
           </div>
           <div className="flex flex-wrap items-center gap-4 pt-2 text-sm">
@@ -95,6 +128,15 @@ export default function PracticeCenter({ topics, questions, attempts: initialAtt
             <Result result={result} reset={reset} />
           ) : (
             <>
+              {loadingQuestions ? <p className="text-sm text-muted-foreground">Generating a fresh question set…</p> : null}
+              {questionError && !loadingQuestions ? (
+                <div className="rounded-md border border-destructive/40 p-3 text-sm">
+                  <p>{questionError}</p>
+                  <Button className="mt-3" variant="outline" onClick={() => selectTopic(topicId)}>
+                    Retry question generation
+                  </Button>
+                </div>
+              ) : null}
               <div className="flex justify-between text-sm text-muted-foreground"><span>{topic?.label} · {answeredCount}/{topicQuestions.length} answered</span><span>{timed ? "Timer running" : "Untimed practice"}</span></div>
               {topicQuestions.map((question, index) => (
                 <div key={question.id} className="rounded-lg border p-4">
@@ -102,7 +144,7 @@ export default function PracticeCenter({ topics, questions, attempts: initialAtt
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">{question.options.map((option) => <button key={option.value} type="button" onClick={() => setAnswers((current) => ({ ...current, [question.id]: option.value }))} className={`rounded-md border p-3 text-left text-sm transition-colors ${answers[question.id] === option.value ? "border-primary bg-primary/10" : "hover:border-primary/60"}`}>{option.label}</button>)}</div>
                 </div>
               ))}
-              <Button onClick={submit} disabled={saving}>{saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving attempt</> : "Submit practice attempt"}</Button>
+              <Button onClick={submit} disabled={saving || loadingQuestions || !questionSetId}>{saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving attempt</> : loadingQuestions ? "Generating questions" : "Submit practice attempt"}</Button>
             </>
           )}
         </CardContent>

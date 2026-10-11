@@ -80,6 +80,30 @@ test("mixed practice attempts contribute separately to each measured skill and t
   assert.deepEqual(skills.dsa.evidenceRecordIds, ["mixed-1"]);
 });
 
+test("readiness uses saved Gemini questions to attribute generated practice to each skill", () => {
+  const question = {
+    id: "generated-dsa-1",
+    subject: "dsa",
+    topic: "Graphs",
+    difficulty: "hard",
+    answer: "b",
+  };
+  const skills = aggregateReadinessSkills({
+    practiceAttempts: [{
+      id: "generated-practice-1",
+      subject: "mixed",
+      questionIds: JSON.stringify([question.id]),
+      questionData: JSON.stringify([question]),
+      answers: JSON.stringify({ [question.id]: "b" }),
+    }],
+  });
+
+  assert.equal(skills.dsa.score, 100);
+  assert.equal(skills.dsa.topicEvidence.Graphs.questionCount, 1);
+  assert.deepEqual(skills.dsa.evidenceRecordIds, ["generated-practice-1"]);
+  assert.equal(skills.technical.score, null);
+});
+
 test("adaptive learning does not assign a proficiency level without attempts", () => {
   const result = evaluateSkill({ id: "dsa", topics: ["Arrays", "Trees", "Graphs"] }, []);
   assert.equal(result.hasEvidence, false);

@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { requirePrepStudentProfile } from "@/lib/prep-student-profile";
 import { INTERVIEW_ROLES } from "@/data/prep-interview";
+import { createGeneratedQuestionSet, getOwnedQuestionSet } from "@/lib/prep-question-generation";
 
 const STAGE_DEFINITIONS = [
   { stageKey: "APTITUDE", title: "Aptitude & reasoning", order: 1, timeLimitSeconds: 12 * 60 },
@@ -10,37 +11,11 @@ const STAGE_DEFINITIONS = [
   { stageKey: "AI_INTERVIEW", title: "AI interview", order: 3, timeLimitSeconds: 0 },
 ];
 
-const QUESTION_BANK = {
-  APTITUDE: [
-    { id: "apt-discount", topic: "Numerical reasoning", prompt: "A product priced at 800 is discounted by 15%. What is the sale price?", options: [["680", "680"], ["700", "700"], ["720", "720"], ["740", "740"]], answer: "680" },
-    { id: "apt-sequence", topic: "Number sequences", prompt: "What number comes next: 3, 7, 13, 21, 31, ?", options: [["41", "41"], ["42", "42"], ["43", "43"], ["45", "45"]], answer: "43" },
-    { id: "apt-work", topic: "Work and rates", prompt: "Five workers finish a task in 12 days. At the same rate, how long would 8 workers take?", options: [["6.5 days", "6.5 days"], ["7.5 days", "7.5 days"], ["8 days", "8 days"], ["9.6 days", "9.6 days"]], answer: "7.5 days" },
-    { id: "apt-probability", topic: "Probability", prompt: "A bag contains 3 red and 2 blue tokens. Two are drawn without replacement. What is the probability both are blue?", options: [["1/10", "1/10"], ["1/5", "1/5"], ["2/5", "2/5"], ["1/2", "1/2"]], answer: "1/10" },
-    { id: "apt-ratio", topic: "Ratios", prompt: "The ratio of developers to testers is 3:2 in a team of 25. How many are developers?", options: [["10", "10"], ["12", "12"], ["15", "15"], ["18", "18"]], answer: "15" },
-    { id: "apt-logic", topic: "Logical reasoning", prompt: "All Nors are Pels. No Pels are Vims. Which statement must be true?", options: [["Some Nors are Vims", "Some Nors are Vims"], ["No Nors are Vims", "No Nors are Vims"], ["All Vims are Nors", "All Vims are Nors"], ["No Pels are Nors", "No Pels are Nors"]], answer: "No Nors are Vims" },
-  ],
-  TECHNICAL_CODING: [
-    { id: "tc-complexity", topic: "Algorithms", prompt: "A loop processes n items and performs a binary search in a sorted array for each item. What is its time complexity?", options: [["O(log n)", "O(log n)"], ["O(n)", "O(n)"], ["O(n log n)", "O(n log n)"], ["O(n²)", "O(n²)"]], answer: "O(n log n)" },
-    { id: "tc-hashmap", topic: "Data structures", prompt: "Which data structure gives average O(1) lookup by key and is useful for solving Two Sum in one pass?", options: [["Stack", "Stack"], ["Hash map", "Hash map"], ["Binary heap", "Binary heap"], ["Queue", "Queue"]], answer: "Hash map" },
-    { id: "tc-sql", topic: "SQL", prompt: "Which SQL clause filters individual rows before grouping?", options: [["HAVING", "HAVING"], ["WHERE", "WHERE"], ["ORDER BY", "ORDER BY"], ["DISTINCT", "DISTINCT"]], answer: "WHERE" },
-    { id: "tc-http", topic: "Web fundamentals", prompt: "Which HTTP status code most commonly indicates that a resource was created successfully?", options: [["200", "200 OK"], ["201", "201 Created"], ["204", "204 No Content"], ["301", "301 Moved Permanently"]], answer: "201" },
-    { id: "tc-code-trace", topic: "Code tracing", prompt: "What does this return? `[1, 2, 3].map(x => x * 2).filter(x => x > 2).length`", options: [["1", "1"], ["2", "2"], ["3", "3"], ["6", "6"]], answer: "2" },
-    { id: "tc-transactions", topic: "Databases", prompt: "Which ACID property ensures a transaction's changes are all applied or none are?", options: [["Consistency", "Consistency"], ["Isolation", "Isolation"], ["Atomicity", "Atomicity"], ["Durability", "Durability"]], answer: "Atomicity" },
-  ],
-};
-
 const STAGE_WEIGHTS = { APTITUDE: 25, TECHNICAL_CODING: 35, AI_INTERVIEW: 40 };
 
 function normalizeCompanyName(value) {
   if (typeof value !== "string") return "";
   return value.trim().replace(/\s+/g, " ").slice(0, 100);
-}
-
-function stageQuestions(stageKey) {
-  return (QUESTION_BANK[stageKey] || []).map(({ answer, ...question }) => ({
-    ...question,
-    options: question.options.map(([value, label]) => ({ value, label })),
-  }));
 }
 
 function buildSimulationResult(simulation, stages) {
@@ -83,6 +58,22 @@ export async function startPlacementSimulation({ simulationType, role, companyNa
   const normalizedCompany = normalizeCompanyName(companyName);
   if (simulationType === "COMPANY" && !normalizedCompany) throw new Error("Enter the company context for a company-focused simulation.");
   const profile = await requirePrepStudentProfile();
+  const generatedSet = await createGeneratedQuestionSet({
+    profileId: profile.id,
+    ownerId: profile.clerkUserId,
+    purpose: "simulation",
+    questionCount: 12,
+    sections: [
+      { id: "APTITUDE", count: 6, subject: "aptitude", allowedTopics: ["Numerical reasoning", "Probability", "Logical reasoning", "Sequences", "Work and rates"] },
+      { id: "TECHNICAL_CODING", count: 6, subject: "technical", allowedTopics: ["Algorithms", "Data structures", "SQL", "Web fundamentals", "Code tracing", "Databases"] },
+    ],
+    instructions: `Create a balanced, timed placement simulation with six aptitude and reasoning questions and six technical/coding questions. ${simulationType === "COMPANY" ? `The student-selected company context is ${normalizedCompany}; use it only as general context and do not claim these are official company questions.` : "Use general placement-level questions."}`,
+  });
+  const questionSet = await getOwnedQuestionSet({
+    ownerId: profile.clerkUserId,
+    questionSetId: generatedSet.id,
+    purpose: "simulation",
+  });
   const startedAt = new Date();
   const simulation = await db.placementSimulation.create({
     data: {
@@ -91,11 +82,15 @@ export async function startPlacementSimulation({ simulationType, role, companyNa
       role,
       companyName: simulationType === "COMPANY" ? normalizedCompany : null,
       stages: {
-        create: STAGE_DEFINITIONS.map((stage, index) => ({
-          ...stage,
-          status: index === 0 ? "IN_PROGRESS" : "LOCKED",
-          startedAt: index === 0 ? startedAt : null,
-        })),
+        create: STAGE_DEFINITIONS.map((stage, index) => {
+          const questions = questionSet.questions.filter((question) => question.sectionId === stage.stageKey);
+          return {
+            ...stage,
+            status: index === 0 ? "IN_PROGRESS" : "LOCKED",
+            startedAt: index === 0 ? startedAt : null,
+            evidence: JSON.stringify({ questionSetId: questionSet.id, questions }),
+          };
+        }),
       },
     },
     select: { id: true },
@@ -122,7 +117,11 @@ export async function getPlacementSimulation(simulationId) {
     },
   });
   if (!simulation) throw new Error("Simulation not found.");
-  const stages = simulation.stages.map((stage) => ({
+  const stages = simulation.stages.map((stage) => {
+    const evidence = JSON.parse(stage.evidence || "{}");
+    const questions = Array.isArray(evidence.questions) ? evidence.questions : [];
+    const { questions: _savedQuestions, ...publicEvidence } = evidence;
+    return ({
     id: stage.id,
     stageKey: stage.stageKey,
     title: stage.title,
@@ -130,18 +129,21 @@ export async function getPlacementSimulation(simulationId) {
     status: stage.status,
     timeLimitSeconds: stage.timeLimitSeconds,
     score: stage.score,
-    evidence: JSON.parse(stage.evidence || "{}"),
+    evidence: publicEvidence,
     durationSeconds: stage.durationSeconds,
     startedAt: stage.startedAt,
     completedAt: stage.completedAt,
     sourceRecordId: stage.sourceRecordId,
     questions: stage.status === "IN_PROGRESS" && stage.stageKey !== "AI_INTERVIEW"
-      ? stageQuestions(stage.stageKey)
+      ? questions.map(({ answer, ...question }) => ({
+        ...question,
+        options: question.options.map(([value, label]) => ({ value, label })),
+      }))
       : [],
     interviewSessionId: stage.stageKey === "AI_INTERVIEW" ? simulation.interviewSessions[0]?.id || null : null,
     interviewStatus: stage.stageKey === "AI_INTERVIEW" ? simulation.interviewSessions[0]?.status || null : null,
     evaluationId: stage.stageKey === "AI_INTERVIEW" ? simulation.interviewSessions[0]?.evaluation?.id || null : null,
-  }));
+  }); });
   return {
     id: simulation.id,
     simulationType: simulation.simulationType,
@@ -170,8 +172,9 @@ export async function submitPlacementSimulationStage({ simulationId, stageId, an
   if (!stage || stage.status !== "IN_PROGRESS" || stage.stageKey === "AI_INTERVIEW" || stage.order !== simulation.currentStage) {
     throw new Error("This simulation round is no longer active.");
   }
-  const questions = QUESTION_BANK[stage.stageKey];
-  if (!questions) throw new Error("This simulation round is not supported.");
+  const stageEvidence = JSON.parse(stage.evidence || "{}");
+  const questions = stageEvidence.questions;
+  if (!Array.isArray(questions) || !questions.length) throw new Error("This simulation round has no saved generated questions.");
   const answerEntries = Object.entries(answers);
   if (answerEntries.some(([questionId, answer]) => (
     !questions.some((question) => question.id === questionId && question.options.some(([value]) => value === answer))
@@ -190,6 +193,7 @@ export async function submitPlacementSimulationStage({ simulationId, stageId, an
   });
   const elapsed = Math.min(stage.timeLimitSeconds, Math.max(0, Math.floor((now.getTime() - stage.startedAt.getTime()) / 1000)));
   const evidence = JSON.stringify({
+    questionSetId: stageEvidence.questionSetId,
     questionCount: questions.length,
     answeredCount: timedOut ? 0 : answerEntries.length,
     correctCount,

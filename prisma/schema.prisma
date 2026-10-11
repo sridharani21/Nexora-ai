@@ -418,6 +418,7 @@ model PrepStudentProfile {
   createdAt              DateTime                   @default(now())
   updatedAt              DateTime                   @updatedAt
   assessments            PrepAssessmentAttempt[]
+  generatedQuestionSets  PrepGeneratedQuestionSet[]
   integrityEvents        PrepAssessmentIntegrityEvent[]
   readiness              PrepPlacementReadiness?
   readinessSnapshots     PrepPlacementReadinessSnapshot[]
@@ -451,6 +452,7 @@ model PrepPlacementReadiness {
   communicationScore    Int
   interviewReadiness    Int?
   resumeReadiness       Int?
+  evidenceCoverage      Int                @default(0)
   status                String
   skillProfile          String
   skillGaps             String
@@ -674,6 +676,20 @@ model PrepAssessmentAttempt {
   @@index([profileId, completedAt])
 }
 
+model PrepGeneratedQuestionSet {
+  id        String             @id @default(cuid())
+  profileId String?
+  profile   PrepStudentProfile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  ownerId   String
+  purpose   String
+  questions String             @db.Text
+  createdAt DateTime           @default(now())
+  usedAt    DateTime?
+
+  @@index([profileId, createdAt])
+  @@index([ownerId, createdAt])
+}
+
 model PrepPracticeAttempt {
   id              String            @id @default(cuid())
   profileId       String
@@ -686,6 +702,7 @@ model PrepPracticeAttempt {
   totalQuestions  Int
   durationSeconds Int
   questionIds     String            @default("[]")
+  questionData    String            @default("[]") @db.Text
   answers         String
   mistakes        String
   completedAt     DateTime          @default(now())

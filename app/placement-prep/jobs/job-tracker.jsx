@@ -89,6 +89,7 @@ export default function JobTracker({ data }) {
       <p className="lead">Save job details, compare explicitly listed skills with your Nexora profile and saved resume evidence, review stated eligibility, and track application stages manually.</p>
       <div className="job-transparency"><strong>Matching limits:</strong> The skill percentage compares only employer skills you enter with skills saved in your Nexora profile and structured resume records. It is a keyword comparison—not an ATS score, verified eligibility decision, or promise of selection. Application status is updated manually.</div>
       <div className="actions"><Link className="button button-secondary" href={data.resumeHref}>Open existing Resume Builder <ArrowRight size={16} /></Link><Link className="button button-secondary" href="/placement-prep/profile">Review profile skills</Link></div>
+      <p className="helper">The button opens Nexora’s existing Resume Builder at /resume-builder in a separate page; resume editing happens there, not inside the Jobs tracker. The tracker can compare job skills with skills and project technologies saved in your resumes.</p>
     </section>
     <section className="section"><div className="grid grid-3"><Metric label="Tracked jobs" value={data.applications.length} /><Metric label="Open applications" value={activeCount} /><Metric label="Profile and resume skills" value={data.matchingSkills.length} /></div></section>
     <section className="section job-form-grid">

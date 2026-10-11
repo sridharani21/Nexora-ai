@@ -125,7 +125,25 @@ async function generateInterviewQuestion(profile, session, turns, sequenceIndex)
   const history = turns.map((turn) => ({
     question: turn.question,
     answer: turn.response?.slice(0, 2000) || "",
-  })).slice(-4);
+  }));
+  const [previousInterviewQuestions, previousQuestionSets] = await Promise.all([
+    db.prepInterviewTurn.findMany({
+      where: { session: { profileId: profile.id } },
+      select: { question: true },
+    }),
+    db.prepGeneratedQuestionSet.findMany({
+      where: { profileId: profile.id },
+      select: { questions: true },
+    }),
+  ]);
+  const usedQuestions = [
+    ...previousInterviewQuestions.map((turn) => turn.question),
+    ...previousQuestionSets.flatMap((set) => {
+      const questions = JSON.parse(set.questions);
+      if (!Array.isArray(questions)) throw new Error("Saved question history is invalid.");
+      return questions.map((question) => question.prompt);
+    }),
+  ];
   const profileContext = {
     skills: profile.skills.slice(0, 1200),
     interests: profile.interests.slice(0, 800),
@@ -142,11 +160,24 @@ Interview mode: ${session.mode} (practice can adjust difficulty by at most one l
 Requested difficulty: ${session.difficulty}
 Question number: ${sequenceIndex} of ${session.maxQuestions}
 Student profile and assessment evidence: ${JSON.stringify(profileContext)}
-Prior interview turns: ${JSON.stringify(history)}
+Recent interview turns: ${JSON.stringify(history.slice(-4))}
+All previously used placement-prep test and interview questions; do not repeat or paraphrase any of these: ${JSON.stringify(usedQuestions)}
 
 Return JSON only.`;
-  const generated = await generateJson(prompt);
-  return cleanGeneratedQuestion(generated, session, sequenceIndex);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const generated = await generateJson(
+      attempt === 0
+        ? prompt
+        : `${prompt}\nYour previous response repeated a used question. Generate a materially different question about another aspect of the role.`,
+    );
+    const cleanQuestion = cleanGeneratedQuestion(generated, session, sequenceIndex);
+    const normalizedQuestion = cleanQuestion.question.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const repeated = usedQuestions.some((question) =>
+      question.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() === normalizedQuestion
+    );
+    if (!repeated) return cleanQuestion;
+  }
+  throw new Error("Gemini repeated a previous interview question. Please advance again to generate a new question.");
 }
 
 export async function getAiInterviewDashboard() {

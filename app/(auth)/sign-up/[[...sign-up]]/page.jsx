@@ -6,7 +6,7 @@ const page = () => {
     <SignUp
       path="/sign-up"
       routing="path"
-      fallbackRedirectUrl="/placement-workspace"
+      forceRedirectUrl="/"
       signInUrl="/sign-in"
     />
   )

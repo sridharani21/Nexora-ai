@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import { ASSESSMENT_SECTIONS } from "@/data/prep-assessment";
 import { getAssessmentAccess } from "@/actions/prep-integrity";
 import { requirePrepStudentProfile } from "@/lib/prep-student-profile";
+import { claimQuestionSet, createGeneratedQuestionSet, getOwnedQuestionSet } from "@/lib/prep-question-generation";
 
 const INTEGRITY_EVENT_TYPES = [
   "tab-hidden",
@@ -32,7 +33,7 @@ const assessmentSubmissionSchema = z.object({
     at: z.string().max(40).optional(),
   })).max(100).default([]),
 });
-const QUESTION_BANK_VERSION = "diagnostic-v1";
+const QUESTION_BANK_VERSION = "gemini-diagnostic-v1";
 
 const fields = {
   builder: { name: "Software Development", roles: ["Frontend Developer", "Full Stack Developer"] },
@@ -41,14 +42,46 @@ const fields = {
   security: { name: "Cybersecurity", roles: ["Security Analyst", "Application Security Engineer"] },
 };
 
-export async function saveAssessment({ answers, integrityEvents = [], mediaEvents = [] }) {
+export async function createAssessmentQuestionSet() {
+  const access = await getAssessmentAccess();
+  if (!access.allowed) throw new Error(`Assessment locked until ${new Date(access.lockedUntil).toLocaleTimeString()}.`);
+  const profile = await requirePrepStudentProfile();
+  const sections = ASSESSMENT_SECTIONS.map(({ id, title, description, questions }) => ({
+    id,
+    title,
+    description,
+    subject: id,
+    count: questions.length,
+  }));
+  const questionCount = sections.reduce((sum, section) => sum + section.count, 0);
+  const questionSet = await createGeneratedQuestionSet({
+    profileId: profile.id,
+    ownerId: profile.clerkUserId,
+    purpose: "assessment",
+    questionCount,
+    sections,
+    instructions: "Create a balanced diagnostic spanning every section's description. Spread easy, medium, and hard questions across scored sections. Career-interest items must be preference questions with no correct answer.",
+  });
+  return {
+    ...questionSet,
+    sections: sections.map(({ id, title, description }) => ({
+      id,
+      title,
+      description,
+      questions: questionSet.questions.filter((question) => question.sectionId === id),
+    })),
+  };
+}
+
+export async function saveAssessment({ questionSetId, answers, integrityEvents = [], mediaEvents = [] }) {
   const access = await getAssessmentAccess();
   if (!access.allowed) throw new Error(`Assessment locked until ${new Date(access.lockedUntil).toLocaleTimeString()}.`);
   const profile = await requirePrepStudentProfile();
   const parsed = assessmentSubmissionSchema.safeParse({ answers, integrityEvents, mediaEvents });
   if (!parsed.success) throw new Error("Assessment answers or integrity-event data are invalid.");
   const submitted = parsed.data.answers;
-  const allQuestions = ASSESSMENT_SECTIONS.flatMap((section) => section.questions);
+  const questionSet = await getOwnedQuestionSet({ ownerId: profile.clerkUserId, questionSetId, purpose: "assessment" });
+  const allQuestions = questionSet.questions;
   const questionIds = new Set(allQuestions.map((question) => question.id));
   const submittedIds = Object.keys(submitted);
   if (submittedIds.length !== questionIds.size || submittedIds.some((id) => !questionIds.has(id))) {
@@ -62,14 +95,15 @@ export async function saveAssessment({ answers, integrityEvents = [], mediaEvent
   const sectionScores = {};
   const details = {};
   for (const section of ASSESSMENT_SECTIONS) {
-    const scored = section.questions.filter((question) => question.answer);
+    const sectionQuestions = allQuestions.filter((question) => question.sectionId === section.id);
+    const scored = sectionQuestions.filter((question) => question.answer);
     const correct = scored.filter((question) => submitted[question.id] === question.answer).length;
     sectionScores[section.id] = scored.length ? Math.round((correct / scored.length) * 100) : null;
-    section.questions.forEach((question) => {
+    sectionQuestions.forEach((question) => {
       details[question.id] = { section: section.id, topic: question.topic || null, difficulty: question.difficulty || "easy", selected: submitted[question.id] || null, correct: question.answer || null, isCorrect: question.answer ? submitted[question.id] === question.answer : null };
     });
   }
-  const interestCounts = ASSESSMENT_SECTIONS.find((section) => section.id === "interest").questions.reduce((counts, question) => {
+  const interestCounts = allQuestions.filter((question) => question.sectionId === "interest").reduce((counts, question) => {
     const value = submitted[question.id];
     if (value) counts[value] = (counts[value] || 0) + 1;
     return counts;
@@ -91,6 +125,9 @@ export async function saveAssessment({ answers, integrityEvents = [], mediaEvent
     ...parsed.data.mediaEvents.map(({ type, at }) => ({ type, at: at || null })),
   ];
   const integrityScore = Math.max(0, 100 - parsed.data.integrityEvents.length * 15);
-  const attempt = await db.prepAssessmentAttempt.create({ data: { profileId: profile.id, overallScore, sectionScores: JSON.stringify(sectionScores), skillProfile: JSON.stringify(skillProfile), strengths: JSON.stringify(strengths), weaknesses: JSON.stringify(weaknesses), careerProfile: JSON.stringify(careerProfile), answers: JSON.stringify(details), difficultyMix: JSON.stringify(difficultyMix), integrityEvents: JSON.stringify(savedIntegrityEvents), integrityScore, reviewRequired: savedIntegrityEvents.length > 0, questionBankVersion: QUESTION_BANK_VERSION } });
+  const attempt = await db.$transaction(async (transaction) => {
+    await claimQuestionSet({ transaction, ownerId: profile.clerkUserId, questionSetId, purpose: "assessment" });
+    return transaction.prepAssessmentAttempt.create({ data: { profileId: profile.id, overallScore, sectionScores: JSON.stringify(sectionScores), skillProfile: JSON.stringify(skillProfile), strengths: JSON.stringify(strengths), weaknesses: JSON.stringify(weaknesses), careerProfile: JSON.stringify(careerProfile), answers: JSON.stringify(details), difficultyMix: JSON.stringify(difficultyMix), integrityEvents: JSON.stringify(savedIntegrityEvents), integrityScore, reviewRequired: savedIntegrityEvents.length > 0, questionBankVersion: QUESTION_BANK_VERSION } });
+  });
   return { attempt, sectionScores, skillProfile, strengths, weaknesses, careerProfile, overallScore };
 }

@@ -18,7 +18,7 @@ export default async function PlacementPreparationPage() {
     data = await getPlacementPreparation();
   } catch (error) {
     if (error instanceof Error && error.message.includes("Complete your placement profile")) {
-      redirect("/placement-journey");
+      redirect("/");
     }
     throw error;
   }
