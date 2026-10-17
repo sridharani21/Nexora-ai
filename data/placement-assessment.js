@@ -35,14 +35,14 @@ export const PLACEMENT_ASSESSMENT_SECTIONS = [
     questions: [
       {
         id: "aptitude-percentage",
-        prompt: "A product priced at 800 is discounted by 15%. What is the sale price?",
+        prompt: "A product priced at ₹800 is discounted by 15%. What is the sale price?",
         options: [
-          { value: "680", label: "680" },
-          { value: "700", label: "700" },
-          { value: "720", label: "720" },
-          { value: "740", label: "740" },
+          { value: "₹680", label: "₹680" },
+          { value: "₹700", label: "₹700" },
+          { value: "₹720", label: "₹720" },
+          { value: "₹740", label: "₹740" },
         ],
-        answer: "680",
+        answer: "₹680",
       },
       {
         id: "aptitude-sequence",

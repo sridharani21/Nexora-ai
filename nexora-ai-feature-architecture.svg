@@ -1,0 +1,201 @@
+<svg width="1800" height="1100" viewBox="0 0 1800 1100" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Nexora AI Feature Architecture</title>
+  <desc id="desc">Architecture diagram of the Nexora AI website showing user interface, data collection, processing, machine learning, database, modules, and workflow.</desc>
+
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4f5f7"/>
+      <stop offset="100%" stop-color="#eef4ff"/>
+    </linearGradient>
+    <linearGradient id="userGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dfeaf9"/>
+      <stop offset="100%" stop-color="#d8ebff"/>
+    </linearGradient>
+    <linearGradient id="collectGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dff2f4"/>
+      <stop offset="100%" stop-color="#cfeaf1"/>
+    </linearGradient>
+    <linearGradient id="processGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7e4f3"/>
+      <stop offset="100%" stop-color="#eed7ee"/>
+    </linearGradient>
+    <linearGradient id="mlGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5e5d7"/>
+      <stop offset="100%" stop-color="#f2d7b8"/>
+    </linearGradient>
+    <linearGradient id="outputGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dff5e0"/>
+      <stop offset="100%" stop-color="#cfeecb"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3d7"/>
+      <stop offset="100%" stop-color="#fde9b6"/>
+    </linearGradient>
+    <linearGradient id="moduleGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e8edf8"/>
+      <stop offset="100%" stop-color="#dfe8ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2f3c4b"/>
+    </marker>
+    <marker id="arrowStart" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto-start-reverse">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2f3c4b"/>
+    </marker>
+    <style>
+      .title { font: 700 34px 'Segoe UI', sans-serif; fill: #141b2a; }
+      .subtitle { font: 600 18px 'Segoe UI', sans-serif; fill: #334155; }
+      .section { font: 700 24px 'Segoe UI', sans-serif; fill: #1f2a37; }
+      .boxTitle { font: 700 20px 'Segoe UI', sans-serif; fill: #0f172a; }
+      .item { font: 500 14px 'Segoe UI', sans-serif; fill: #334155; }
+      .tiny { font: 600 12px 'Segoe UI', sans-serif; fill: #475569; }
+      .card { fill: #ffffff; stroke: #d4dbe4; stroke-width: 2; filter: url(#shadow); }
+      .userBox { fill: url(#userGrad); stroke: #8ab9d9; stroke-width: 2; }
+      .collectBox { fill: url(#collectGrad); stroke: #6bb6c7; stroke-width: 2; }
+      .processBox { fill: url(#processGrad); stroke: #d48ec8; stroke-width: 2; }
+      .mlBox { fill: url(#mlGrad); stroke: #d9995d; stroke-width: 2; }
+      .outputBox { fill: url(#outputGrad); stroke: #62b567; stroke-width: 2; }
+      .dbBox { fill: url(#dbGrad); stroke: #d7ba63; stroke-width: 2; }
+      .moduleBox { fill: url(#moduleGrad); stroke: #a5b5d8; stroke-width: 2; }
+      .arrow { stroke: #2f3c4b; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .dashed { stroke-dasharray: 8 8; }
+      .line { stroke: #90a0b0; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1100" fill="url(#pageBg)"/>
+
+  <text x="900" y="65" text-anchor="middle" class="title">Nexora AI Platform Architecture</text>
+  <text x="900" y="95" text-anchor="middle" class="subtitle">Career intelligence workflow across user data, AI processing, and product modules</text>
+
+  <!-- Left user interface -->
+  <rect x="40" y="150" width="220" height="290" rx="20" class="userBox card"/>
+  <text x="150" y="190" text-anchor="middle" class="section">USER INTERFACE</text>
+  <circle cx="150" cy="240" r="32" fill="#f8fafc" stroke="#9fb9d1" stroke-width="2"/>
+  <circle cx="150" cy="234" r="14" fill="#1f2937"/>
+  <rect x="126" y="247" width="48" height="24" rx="10" fill="#1f2937"/>
+  <text x="150" y="295" text-anchor="middle" class="boxTitle">Student / Job Seeker</text>
+  <text x="150" y="322" text-anchor="middle" class="item">• Skills &amp; profile</text>
+  <text x="150" y="344" text-anchor="middle" class="item">• Career goals</text>
+  <text x="150" y="366" text-anchor="middle" class="item">• Resume &amp; experience</text>
+
+  <!-- data collection -->
+  <rect x="330" y="150" width="260" height="290" rx="24" class="collectBox card"/>
+  <text x="460" y="190" text-anchor="middle" class="section">DATA COLLECTION</text>
+  <rect x="365" y="222" width="190" height="58" rx="12" fill="#edf6f9" stroke="#8cc7d8"/>
+  <text x="460" y="255" text-anchor="middle" class="item">Profile data</text>
+  <text x="460" y="272" text-anchor="middle" class="tiny">Name, bio, skills, experience</text>
+  <rect x="365" y="292" width="190" height="58" rx="12" fill="#edf6f9" stroke="#8cc7d8"/>
+  <text x="460" y="325" text-anchor="middle" class="item">Resume + documents</text>
+  <text x="460" y="342" text-anchor="middle" class="tiny">PDF, DOCX, uploads</text>
+  <rect x="365" y="362" width="190" height="58" rx="12" fill="#edf6f9" stroke="#8cc7d8"/>
+  <text x="460" y="395" text-anchor="middle" class="item">Assessment data</text>
+  <text x="460" y="412" text-anchor="middle" class="tiny">Interviews, quizzes, scores</text>
+
+  <!-- processing -->
+  <rect x="650" y="150" width="260" height="290" rx="24" class="processBox card"/>
+  <text x="780" y="190" text-anchor="middle" class="section">DATA PROCESSING</text>
+  <rect x="685" y="222" width="190" height="44" rx="10" fill="#f8edf9" stroke="#d087c8"/>
+  <text x="780" y="250" text-anchor="middle" class="item">Clean &amp; normalize</text>
+  <rect x="685" y="278" width="190" height="44" rx="10" fill="#f8edf9" stroke="#d087c8"/>
+  <text x="780" y="306" text-anchor="middle" class="item">Parse resume / PDFs</text>
+  <rect x="685" y="334" width="190" height="44" rx="10" fill="#f8edf9" stroke="#d087c8"/>
+  <text x="780" y="362" text-anchor="middle" class="item">Extract skills &amp; signals</text>
+  <rect x="685" y="390" width="190" height="44" rx="10" fill="#f8edf9" stroke="#d087c8"/>
+  <text x="780" y="418" text-anchor="middle" class="item">Map to profiles</text>
+
+  <!-- ML -->
+  <rect x="970" y="150" width="260" height="290" rx="24" class="mlBox card"/>
+  <text x="1100" y="190" text-anchor="middle" class="section">AI / ML MODELING</text>
+  <rect x="1005" y="222" width="190" height="44" rx="10" fill="#fff4ea" stroke="#d99a5b"/>
+  <text x="1100" y="250" text-anchor="middle" class="item">Career matching</text>
+  <rect x="1005" y="278" width="190" height="44" rx="10" fill="#fff4ea" stroke="#d99a5b"/>
+  <text x="1100" y="306" text-anchor="middle" class="item">Skill gap detection</text>
+  <rect x="1005" y="334" width="190" height="44" rx="10" fill="#fff4ea" stroke="#d99a5b"/>
+  <text x="1100" y="362" text-anchor="middle" class="item">Resume + ATS scoring</text>
+  <rect x="1005" y="390" width="190" height="44" rx="10" fill="#fff4ea" stroke="#d99a5b"/>
+  <text x="1100" y="418" text-anchor="middle" class="item">Interview feedback</text>
+
+  <!-- output -->
+  <rect x="1290" y="150" width="260" height="290" rx="24" class="outputBox card"/>
+  <text x="1420" y="190" text-anchor="middle" class="section">PREDICTION &amp; OUTPUT</text>
+  <rect x="1325" y="222" width="190" height="44" rx="10" fill="#eefcf3" stroke="#67bf72"/>
+  <text x="1420" y="250" text-anchor="middle" class="item">Career recommendations</text>
+  <rect x="1325" y="278" width="190" height="44" rx="10" fill="#eefcf3" stroke="#67bf72"/>
+  <text x="1420" y="306" text-anchor="middle" class="item">Roadmaps &amp; courses</text>
+  <rect x="1325" y="334" width="190" height="44" rx="10" fill="#eefcf3" stroke="#67bf72"/>
+  <text x="1420" y="362" text-anchor="middle" class="item">ATS / Resume insights</text>
+  <rect x="1325" y="390" width="190" height="44" rx="10" fill="#eefcf3" stroke="#67bf72"/>
+  <text x="1420" y="418" text-anchor="middle" class="item">Interview &amp; readiness reports</text>
+
+  <!-- arrows between top boxes -->
+  <line x1="260" y1="295" x2="318" y2="295" class="arrow"/>
+  <line x1="590" y1="295" x2="638" y2="295" class="arrow"/>
+  <line x1="910" y1="295" x2="958" y2="295" class="arrow"/>
+  <line x1="1230" y1="295" x2="1278" y2="295" class="arrow"/>
+
+  <!-- Database box -->
+  <rect x="330" y="520" width="340" height="260" rx="24" class="dbBox card"/>
+  <text x="500" y="560" text-anchor="middle" class="section">DATABASE</text>
+  <text x="500" y="600" text-anchor="middle" class="item">Users / Auth</text>
+  <text x="500" y="628" text-anchor="middle" class="item">Career profiles &amp; onboarding</text>
+  <text x="500" y="656" text-anchor="middle" class="item">Resumes / ATS results</text>
+  <text x="500" y="684" text-anchor="middle" class="item">Interview history / scores</text>
+  <text x="500" y="712" text-anchor="middle" class="item">Roadmaps / courses / jobs</text>
+  <text x="500" y="740" text-anchor="middle" class="item">Prisma + PostgreSQL</text>
+
+  <!-- AI modules box -->
+  <rect x="730" y="520" width="760" height="260" rx="24" class="moduleBox card"/>
+  <text x="1110" y="560" text-anchor="middle" class="section">AI MODULES &amp; PRODUCT FEATURES</text>
+
+  <rect x="760" y="590" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="840" y="624" text-anchor="middle" class="item">Career Discovery</text>
+
+  <rect x="940" y="590" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="1020" y="624" text-anchor="middle" class="item">Resume Builder</text>
+
+  <rect x="1120" y="590" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="1200" y="624" text-anchor="middle" class="item">ATS Scanner</text>
+
+  <rect x="1300" y="590" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="1380" y="624" text-anchor="middle" class="item">Interview Prep</text>
+
+  <rect x="760" y="670" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="840" y="704" text-anchor="middle" class="item">Job Matcher</text>
+
+  <rect x="940" y="670" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="1020" y="704" text-anchor="middle" class="item">Roadmap Engine</text>
+
+  <rect x="1120" y="670" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="1200" y="704" text-anchor="middle" class="item">Course Recommender</text>
+
+  <rect x="1300" y="670" width="160" height="54" rx="12" fill="#ffffff" stroke="#a9bcd9"/>
+  <text x="1380" y="704" text-anchor="middle" class="item">Career Chat</text>
+
+  <!-- Persist user inputs and route generated outcomes to feature modules. -->
+  <line x1="460" y1="440" x2="460" y2="508" class="arrow"/>
+  <line x1="1420" y1="440" x2="1420" y2="508" class="arrow"/>
+
+  <!-- Modules read from and write results back to the database. -->
+  <line x1="682" y1="650" x2="718" y2="650" stroke="#2f3c4b" stroke-width="3"
+        marker-start="url(#arrowStart)" marker-end="url(#arrow)"/>
+
+  <!-- bottom features row -->
+  <text x="130" y="915" text-anchor="middle" class="subtitle">Core workflow</text>
+  <text x="430" y="915" text-anchor="middle" class="subtitle">Profile + resume intake</text>
+  <text x="760" y="915" text-anchor="middle" class="subtitle">Intelligent analysis</text>
+  <text x="1090" y="915" text-anchor="middle" class="subtitle">Personalized guidance</text>
+  <text x="1440" y="915" text-anchor="middle" class="subtitle">Actionable outcomes</text>
+
+  <circle cx="130" cy="900" r="8" fill="#4a90e2"/>
+  <circle cx="430" cy="900" r="8" fill="#5dc0c0"/>
+  <circle cx="760" cy="900" r="8" fill="#d889c8"/>
+  <circle cx="1090" cy="900" r="8" fill="#d79d5c"/>
+  <circle cx="1440" cy="900" r="8" fill="#69b669"/>
+
+  <!-- small footer note -->
+  <rect x="620" y="960" width="560" height="70" rx="18" fill="#ffffff" stroke="#d9e0eb"/>
+  <text x="900" y="994" text-anchor="middle" class="item">System flow: User input → enrichment → AI analysis → recommendations → saved results + next actions</text>
+</svg>

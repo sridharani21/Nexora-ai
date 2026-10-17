@@ -14,7 +14,7 @@ export const ASSESSMENT_SECTIONS = [
     title: "Aptitude and reasoning",
     description: "Numerical reasoning, probability, logic, sequences, and algorithmic pseudocode used in placement screening.",
     questions: [
-      { id: "aptitude-easy-percent", difficulty: "easy", prompt: "A product priced at 800 is discounted by 15%. What is the sale price?", answer: "680", options: [["680", "680"], ["700", "700"], ["720", "720"], ["740", "740"]] },
+      { id: "aptitude-easy-percent", difficulty: "easy", prompt: "A product priced at ₹800 is discounted by 15%. What is the sale price?", answer: "₹680", options: [["₹680", "₹680"], ["₹700", "₹700"], ["₹720", "₹720"], ["₹740", "₹740"]] },
       { id: "aptitude-easy-ratio", difficulty: "easy", prompt: "The ratio of developers to testers is 3:2. In a team of 25, how many are developers?", answer: "15", options: [["10", "10"], ["12", "12"], ["15", "15"], ["18", "18"]] },
       { id: "aptitude-medium-sequence", difficulty: "medium", prompt: "What number comes next: 2, 6, 12, 20, 30, ?", answer: "42", options: [["36", "36"], ["40", "40"], ["42", "42"], ["44", "44"]] },
       { id: "aptitude-medium-probability", difficulty: "medium", prompt: "A bag has 3 red and 2 blue tokens. What is the probability of drawing a blue token?", answer: "2/5", options: [["1/5", "1/5"], ["2/5", "2/5"], ["1/2", "1/2"], ["3/5", "3/5"]] },

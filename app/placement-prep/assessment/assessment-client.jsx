@@ -19,13 +19,15 @@ export default function AssessmentClient({ access }) {
   const section = sections[sectionIndex], question = section?.questions[questionIndex];
   const streamRef = useRef(null), videoRef = useRef(null);
   const eventCountRef = useRef(0), lockTriggeredRef = useRef(false);
+  const questionSetPromiseRef = useRef(null);
   const questionIdRef = useRef(question?.id);
   questionIdRef.current = question?.id;
   async function loadQuestionSet() {
     setGenerating(true);
     setError("");
     try {
-      setQuestionSet(await createAssessmentQuestionSet());
+      questionSetPromiseRef.current = createAssessmentQuestionSet();
+      setQuestionSet(await questionSetPromiseRef.current);
       setSectionIndex(0);
       setQuestionIndex(0);
     } catch (generationError) {
@@ -36,7 +38,8 @@ export default function AssessmentClient({ access }) {
   }
   useEffect(() => {
     let active = true;
-    createAssessmentQuestionSet().then((generated) => {
+    questionSetPromiseRef.current ||= createAssessmentQuestionSet();
+    questionSetPromiseRef.current.then((generated) => {
       if (active) setQuestionSet(generated);
     }).catch((generationError) => {
       if (active) setError(generationError instanceof Error ? generationError.message : "Unable to generate assessment questions.");

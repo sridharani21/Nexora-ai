@@ -1,0 +1,159 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Nexora AI Website Architecture</title>
+  <desc id="desc">A clean architecture diagram showing users, frontend, backend, database, AI services, and notification infrastructure for the Nexora AI website.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2ff"/>
+    </linearGradient>
+    <linearGradient id="appGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dbeafe"/>
+      <stop offset="100%" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="aiGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <linearGradient id="notifyGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dcfce7"/>
+      <stop offset="100%" stop-color="#bbf7d0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .title { font: 700 30px 'Segoe UI', sans-serif; fill: #0f172a; }
+      .subtitle { font: 600 18px 'Segoe UI', sans-serif; fill: #334155; }
+      .label { font: 600 16px 'Segoe UI', sans-serif; fill: #0f172a; }
+      .small { font: 500 13px 'Segoe UI', sans-serif; fill: #475569; }
+      .box-text { font: 600 15px 'Segoe UI', sans-serif; fill: #0f172a; }
+      .soft { font: 500 12px 'Segoe UI', sans-serif; fill: #334155; }
+      .node { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; filter: url(#shadow); }
+      .dark-node { fill: url(#appGrad); stroke: #1e293b; stroke-width: 2; filter: url(#shadow); }
+      .db-node { fill: url(#dbGrad); stroke: #60a5fa; stroke-width: 2; filter: url(#shadow); }
+      .ai-node { fill: url(#aiGrad); stroke: #f59e0b; stroke-width: 2; filter: url(#shadow); }
+      .notify-node { fill: url(#notifyGrad); stroke: #22c55e; stroke-width: 2; filter: url(#shadow); }
+      .arrow-line { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .dashed { stroke-dasharray: 8 8; }
+      .thin { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1400" height="900" fill="url(#bg)"/>
+
+  <text x="700" y="55" text-anchor="middle" class="title">Nexora AI Website Architecture</text>
+  <text x="700" y="86" text-anchor="middle" class="subtitle">Career platform with AI coaching, resume intelligence, interview prep, and job-readiness workflows</text>
+
+  <!-- Left: Users -->
+  <rect x="60" y="130" width="200" height="620" rx="24" class="node"/>
+  <text x="160" y="178" text-anchor="middle" class="label">Users &amp; Clients</text>
+
+  <rect x="90" y="210" width="140" height="70" rx="16" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+  <text x="160" y="250" text-anchor="middle" class="box-text">Student / Job Seeker</text>
+
+  <rect x="90" y="320" width="140" height="70" rx="16" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="2"/>
+  <text x="160" y="360" text-anchor="middle" class="box-text">Browser</text>
+
+  <rect x="90" y="430" width="140" height="90" rx="16" fill="#ecfccb" stroke="#a3e635" stroke-width="2"/>
+  <text x="160" y="470" text-anchor="middle" class="box-text">Mobile / Desktop</text>
+  <text x="160" y="492" text-anchor="middle" class="small">Next.js web app</text>
+
+  <line x1="260" y1="345" x2="360" y2="345" class="arrow-line"/>
+
+  <!-- Central: Next app -->
+  <rect x="360" y="140" width="650" height="610" rx="28" class="dark-node"/>
+  <text x="685" y="176" text-anchor="middle" fill="#f8fafc" class="label">Next.js 16 App Router</text>
+  <text x="685" y="201" text-anchor="middle" fill="#cbd5e1" class="small">Web frontend + server-side logic</text>
+
+  <!-- Frontend -->
+  <rect x="390" y="230" width="230" height="150" rx="18" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="505" y="260" text-anchor="middle" class="label">Frontend UI</text>
+  <text x="505" y="286" text-anchor="middle" class="small">Landing page</text>
+  <text x="505" y="307" text-anchor="middle" class="small">Dashboard + modules</text>
+  <text x="505" y="328" text-anchor="middle" class="small">Resume / Interview / Roadmaps</text>
+  <text x="505" y="349" text-anchor="middle" class="small">Career discovery wizard</text>
+
+  <rect x="660" y="230" width="300" height="150" rx="18" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="810" y="260" text-anchor="middle" class="label">Authentication &amp; Access</text>
+  <text x="810" y="286" text-anchor="middle" class="small">Clerk auth</text>
+  <text x="810" y="307" text-anchor="middle" class="small">Protected routes</text>
+  <text x="810" y="328" text-anchor="middle" class="small">User identity + role checks</text>
+  <text x="810" y="349" text-anchor="middle" class="small">Onboarding enforcement</text>
+
+  <!-- Server layer -->
+  <rect x="390" y="410" width="570" height="250" rx="18" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="675" y="440" text-anchor="middle" class="label">Server Layer</text>
+
+  <rect x="420" y="470" width="150" height="80" rx="14" fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="495" y="503" text-anchor="middle" class="box-text">App Pages</text>
+  <text x="495" y="525" text-anchor="middle" class="small">Server components</text>
+
+  <rect x="590" y="470" width="170" height="80" rx="14" fill="#ede9fe" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="675" y="503" text-anchor="middle" class="box-text">Server Actions</text>
+  <text x="675" y="525" text-anchor="middle" class="small">Profile + assessments</text>
+
+  <rect x="780" y="470" width="150" height="80" rx="14" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="855" y="503" text-anchor="middle" class="box-text">API Routes</text>
+  <text x="855" y="525" text-anchor="middle" class="small">Uploads / AI endpoints</text>
+
+  <rect x="505" y="580" width="330" height="55" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="670" y="614" text-anchor="middle" class="box-text">Core Request Flow</text>
+  <text x="670" y="634" text-anchor="middle" class="small">Auth → Validate → Prisma → AI / Inngest → Response</text>
+
+  <!-- Right: Data and services -->
+  <rect x="1045" y="130" width="285" height="620" rx="24" class="node"/>
+  <text x="1187" y="178" text-anchor="middle" class="label">Data + Integration Layer</text>
+
+  <rect x="1075" y="220" width="225" height="105" rx="18" class="db-node"/>
+  <text x="1187" y="250" text-anchor="middle" class="box-text">PostgreSQL</text>
+  <text x="1187" y="272" text-anchor="middle" class="small">Prisma ORM</text>
+  <text x="1187" y="293" text-anchor="middle" class="small">Users, profiles, resumes, jobs</text>
+
+  <rect x="1075" y="345" width="225" height="105" rx="18" class="ai-node"/>
+  <text x="1187" y="375" text-anchor="middle" class="box-text">AI Services</text>
+  <text x="1187" y="396" text-anchor="middle" class="small">Google Gemini / GenAI</text>
+  <text x="1187" y="417" text-anchor="middle" class="small">Career advice, ATS, resume, tests</text>
+
+  <rect x="1075" y="470" width="225" height="105" rx="18" fill="#f3e8ff" stroke="#c084fc" stroke-width="2"/>
+  <text x="1187" y="500" text-anchor="middle" class="box-text">Async Jobs</text>
+  <text x="1187" y="521" text-anchor="middle" class="small">Inngest workflows</text>
+  <text x="1187" y="542" text-anchor="middle" class="small">Course analysis, generation tasks</text>
+
+  <rect x="1075" y="595" width="225" height="105" rx="18" class="notify-node"/>
+  <text x="1187" y="625" text-anchor="middle" class="box-text">Notifications</text>
+  <text x="1187" y="646" text-anchor="middle" class="small">Browser push + cron reminders</text>
+  <text x="1187" y="667" text-anchor="middle" class="small">VAPID + Web Push</text>
+
+  <!-- Arrows between sections -->
+  <line x1="620" y1="305" x2="660" y2="305" class="arrow-line"/>
+  <line x1="620" y1="520" x2="660" y2="520" class="arrow-line"/>
+  <line x1="760" y1="520" x2="780" y2="520" class="arrow-line"/>
+
+  <path d="M 960 305 L 1045 305" class="arrow-line"/>
+  <path d="M 960 520 L 1045 520" class="arrow-line"/>
+  <path d="M 1187 325 L 1187 345" class="thin"/>
+  <path d="M 1187 450 L 1187 470" class="thin"/>
+  <path d="M 1187 575 L 1187 595" class="thin"/>
+
+  <!-- Core feature pathways -->
+  <text x="700" y="822" text-anchor="middle" class="subtitle">Key feature domains</text>
+  <text x="250" y="855" text-anchor="middle" class="small">Career discovery</text>
+  <text x="470" y="855" text-anchor="middle" class="small">Resume + ATS</text>
+  <text x="690" y="855" text-anchor="middle" class="small">Interview prep</text>
+  <text x="910" y="855" text-anchor="middle" class="small">Roadmaps + courses</text>
+  <text x="1130" y="855" text-anchor="middle" class="small">Readiness tracking</text>
+
+  <circle cx="250" cy="840" r="6" fill="#3b82f6"/>
+  <circle cx="470" cy="840" r="6" fill="#8b5cf6"/>
+  <circle cx="690" cy="840" r="6" fill="#f59e0b"/>
+  <circle cx="910" cy="840" r="6" fill="#10b981"/>
+  <circle cx="1130" cy="840" r="6" fill="#f97316"/>
+</svg>

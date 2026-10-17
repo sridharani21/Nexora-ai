@@ -42,8 +42,8 @@ const TECHNICAL_QUESTIONS = [
   {
     id: "aptitude",
     category: "Aptitude",
-    question: "A product priced at 100 is discounted by 20%. What is its sale price?",
-    options: ["20", "80", "100", "120"],
+    question: "A product priced at ₹100 is discounted by 20%. What is its sale price?",
+    options: ["₹20", "₹80", "₹100", "₹120"],
     answer: 1,
   },
   {
