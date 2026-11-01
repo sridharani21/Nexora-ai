@@ -40,7 +40,7 @@
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
-    "inngest": "^3.49.3",
+    "inngest": "^3.54.2",
     "jspdf": "^4.2.0",
     "lucide-react": "^0.563.0",
     "mammoth": "^1.12.0",
