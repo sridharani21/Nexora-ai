@@ -17,7 +17,7 @@ import QuizResult from "./quiz-result";
 import useFetch from "@/hooks/use-fetch";
 import { BarLoader } from "react-spinners";
 
-export default function Quiz() {
+export default function Quiz({ targetRole = "" }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -80,7 +80,7 @@ export default function Quiz() {
     setCurrentQuestion(0);
     setAnswers([]);
     setShowExplanation(false);
-    generateQuizFn();
+    generateQuizFn(targetRole);
     setResultData(null);
   };
 
@@ -91,7 +91,7 @@ export default function Quiz() {
   // Show results if quiz is completed
   if (resultData) {
     return (
-      <div className="mx-2">
+      <div className="min-w-0">
         <QuizResult result={resultData} onStartNew={startNewQuiz} />
       </div>
     );
@@ -99,18 +99,18 @@ export default function Quiz() {
 
   if (!quizData) {
     return (
-      <Card className="mx-2">
+      <Card className="min-w-0">
         <CardHeader>
           <CardTitle>Ready to test your knowledge?</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This quiz contains 10 questions specific to your industry and
+            This quiz contains 10 questions specific to {targetRole || "your industry and role"} and
             skills. Take your time and choose the best answer for each question.
           </p>
         </CardContent>
         <CardFooter>
-          <Button onClick={generateQuizFn} className="w-full">
+          <Button onClick={() => generateQuizFn(targetRole)} className="w-full">
             Start Quiz
           </Button>
         </CardFooter>
@@ -121,23 +121,23 @@ export default function Quiz() {
   const question = quizData[currentQuestion];
 
   return (
-    <Card className="mx-2">
+    <Card className="min-w-0">
       <CardHeader>
         <CardTitle>
           Question {currentQuestion + 1} of {quizData.length}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-lg font-medium">{question.question}</p>
+        <p className="break-words text-lg font-medium">{question.question}</p>
         <RadioGroup
           onValueChange={handleAnswer}
           value={answers[currentQuestion]}
           className="space-y-2"
         >
           {question.options.map((option, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <RadioGroupItem value={option} id={`option-${index}`} />
-              <Label htmlFor={`option-${index}`}>{option}</Label>
+            <div key={index} className="flex min-w-0 items-start space-x-2">
+              <RadioGroupItem value={option} id={`option-${index}`} className="mt-1 shrink-0" />
+              <Label htmlFor={`option-${index}`} className="min-w-0 break-words">{option}</Label>
             </div>
           ))}
         </RadioGroup>
@@ -149,11 +149,12 @@ export default function Quiz() {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex flex-wrap justify-between gap-3">
         {!showExplanation && (
           <Button
             onClick={() => setShowExplanation(true)}
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={!answers[currentQuestion]}
           >
             Show Explanation
@@ -162,7 +163,7 @@ export default function Quiz() {
         <Button
           onClick={handleNext}
           disabled={!answers[currentQuestion] || savingResult}
-          className="ml-auto"
+          className="ml-auto w-full sm:w-auto"
         >
           {savingResult && (
             <BarLoader className="mt-4" width={"100%"} color="gray" />

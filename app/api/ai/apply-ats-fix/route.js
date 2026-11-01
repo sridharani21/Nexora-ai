@@ -4,7 +4,19 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
 import { generateResumeJson } from "@/lib/resume-llm";
+
+const updatedResumeSchema = z.object({
+  summary: z.string().optional(),
+  experiences: z.array(z.object({
+    position: z.string(),
+    company: z.string(),
+    description: z.array(z.string()),
+  }).passthrough()).optional(),
+  skills: z.array(z.record(z.string(), z.unknown())).optional(),
+  education: z.array(z.record(z.string(), z.unknown())).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0);
 
 export async function POST(req) {
   try {
@@ -44,15 +56,25 @@ Return a JSON object with the fields that need updating. For example:
 
 Return ONLY valid JSON, no markdown:`;
 
-    const updatedData = await generateResumeJson(prompt);
+    const updatedData = await generateResumeJson(prompt, {
+      operation: "resume-ats-fix",
+      validateOutput: (output) => {
+        const parsed = updatedResumeSchema.safeParse(output);
+        return parsed.success ? parsed.data : false;
+      },
+    });
 
     return NextResponse.json({ updatedData });
 
   } catch (error) {
-    console.error("ATS fix error:", error);
+    console.error("ATS fix error.", { code: error?.code || null, name: error?.name || "Error" });
     return NextResponse.json(
-      { error: "Failed to apply fix", details: error.message },
-      { status: 500 }
+      {
+        error: error?.code === "AI_OUTPUT_INVALID"
+          ? "The AI providers returned an invalid resume update. Please try again."
+          : "Failed to apply fix.",
+      },
+      { status: error?.code === "AI_OUTPUT_INVALID" ? 502 : 500 },
     );
   }
 }

@@ -1,10 +1,11 @@
 // File: app/roadmap/[id]/page.jsx
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
+import { getRoadmapProgress, getRoadmapTasks } from "@/lib/learning-roadmap.js";
 
 const BG      = "#080c10";
 const SURFACE = "#0e1419";
@@ -23,7 +24,7 @@ const MONTH_COLORS = [
   { ring:"#34d399", glow:"#34d39920", label:"#34d399" },
 ];
 
-const W = { maxWidth:1100, width:"100%", margin:"0 auto", padding:"0 32px" };
+const W = { maxWidth:1100, width:"100%", margin:"0 auto", padding:"0 clamp(12px, 4vw, 32px)" };
 
 export default function RoadmapDetailPage({ params }) {
   const { id }     = use(params);
@@ -31,10 +32,9 @@ export default function RoadmapDetailPage({ params }) {
   const roadmapRef = useRef(null);
   const [rec,     setRec]     = useState(null);
   const [loading, setLoading] = useState(true);
+  const [savingTask, setSavingTask] = useState("");
 
-  useEffect(() => { fetchRoadmap(); }, [id]);
-
-  const fetchRoadmap = async () => {
+  const fetchRoadmap = useCallback(async () => {
     try {
       const res  = await fetch(`/api/roadmap/${id}`);
       const data = await res.json();
@@ -42,7 +42,9 @@ export default function RoadmapDetailPage({ params }) {
       else { toast.error("Roadmap not found"); router.push("/roadmap/dashboard"); }
     } catch { toast.error("Failed to load"); }
     finally  { setLoading(false); }
-  };
+  }, [id, router]);
+
+  useEffect(() => { fetchRoadmap(); }, [fetchRoadmap]);
 
   const downloadRoadmap = async () => {
     if (!roadmapRef.current) return;
@@ -55,6 +57,28 @@ export default function RoadmapDetailPage({ params }) {
       a.download = `${rec.career.replace(/\s+/g,"_")}_roadmap.png`;
       a.click();
     } catch { toast.error("Failed to download."); }
+  };
+
+  const updateTask = async (taskId, completed) => {
+    setSavingTask(taskId);
+    try {
+      const response = await fetch(`/api/roadmap/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, completed }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error || "Unable to update learning progress.");
+        return;
+      }
+      setRec((previous) => ({ ...previous, data: data.roadmap }));
+      toast.success(completed ? "Learning task completed." : "Learning task reopened.");
+    } catch {
+      toast.error("Unable to update learning progress.");
+    } finally {
+      setSavingTask("");
+    }
   };
 
   // ── Loading state ─────────────────────────────────────────────
@@ -78,6 +102,9 @@ export default function RoadmapDetailPage({ params }) {
   if (!rec) return null;
 
   const roadmap = rec.data;
+  const progress = getRoadmapProgress(roadmap);
+  const completedTasks = new Set(Array.isArray(roadmap.completedTasks) ? roadmap.completedTasks : []);
+  const taskIds = new Map(getRoadmapTasks(roadmap).map((task, index) => [task.id, index]));
 
   return (
     <>
@@ -192,6 +219,15 @@ export default function RoadmapDetailPage({ params }) {
               {" · "}
               Saved {new Date(rec.createdAt).toLocaleDateString("en-US",{ month:"short", day:"numeric", year:"numeric" })}
             </p>
+            <div style={{ marginTop:18, maxWidth:520 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", color:SUBTEXT, fontSize:12, marginBottom:7 }}>
+                <span>Learning tasks completed</span><strong style={{ color:ACCENT }}>{progress.completed}/{progress.total} · {progress.percentage}%</strong>
+              </div>
+              <div role="progressbar" aria-label="Learning task completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percentage} style={{ height:8, borderRadius:8, background:BORDER }}>
+                <div style={{ width:`${progress.percentage}%`, height:"100%", borderRadius:8, background:ACCENT, transition:"width .2s" }}/>
+              </div>
+              {progress.nextTask && <p style={{ color:SUBTEXT, fontSize:12, margin:"8px 0 0" }}>Next: {progress.nextTask.title}</p>}
+            </div>
           </div>
         </div>
 
@@ -253,13 +289,27 @@ export default function RoadmapDetailPage({ params }) {
 
                       {/* Topics */}
                       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                        {week.topics.map((topic, ti) => (
-                          <div key={ti} className="rdd-topic">
-                            <span style={{ color:col.label, marginRight:6, fontSize:9 }}>&#9658;</span>
-                            {topic}
-                          </div>
-                        ))}
+                        {week.topics.map((topic, ti) => {
+                          const taskId = `${month.month}:${week.week}:${ti}`;
+                          const taskIndex = taskIds.get(taskId);
+                          const done = completedTasks.has(taskId);
+                          const blocked = !done && getRoadmapTasks(roadmap).slice(0, taskIndex).some((task) => !completedTasks.has(task.id));
+                          return (
+                            <label key={taskId} className="rdd-topic" style={{ display:"flex", alignItems:"flex-start", gap:8, cursor:blocked ? "not-allowed" : "pointer", opacity:blocked ? .65 : 1 }}>
+                              <input
+                                type="checkbox"
+                                checked={done}
+                                disabled={savingTask === taskId || (blocked && !done)}
+                                onChange={(event) => updateTask(taskId, event.target.checked)}
+                                aria-label={`${done ? "Reopen" : "Complete"} ${topic}`}
+                                style={{ marginTop:2, accentColor:col.ring }}
+                              />
+                              <span style={{ textDecoration:done ? "line-through" : "none", color:done ? ACCENT : SUBTEXT }}>{topic}</span>
+                            </label>
+                          );
+                        })}
                       </div>
+
                     </div>
                   ))}
                 </div>
@@ -267,13 +317,27 @@ export default function RoadmapDetailPage({ params }) {
             );
           })}
 
+          {Array.isArray(roadmap.learningResources) && roadmap.learningResources.length > 0 && (
+            <section style={{ marginTop:28 }}>
+              <h2 style={{ margin:"0 0 12px", color:TEXT, fontSize:20 }}>Learning resources</h2>
+              <div style={{ display:"grid", gap:12, gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,250px),1fr))" }}>
+                {roadmap.learningResources.map((resource) => (
+                  <a key={`${resource.provider}:${resource.title}`} href={resource.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", padding:16, border:`1px solid ${BORDER}`, borderRadius:12, background:SURFACE, color:TEXT, textDecoration:"none" }}>
+                    <strong style={{ display:"block", fontSize:14 }}>{resource.title}</strong>
+                    <span style={{ display:"block", marginTop:6, color:SUBTEXT, fontSize:12 }}>{resource.provider} · {resource.type} · {resource.relatedSkill}</span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Footer */}
           <div style={{ paddingTop:22, borderTop:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginTop:8 }}>
             <span style={{ fontSize:12, color:MUTED }}>
               {rec.career} &middot; {rec.months} month{rec.months>1?"s":""} plan
             </span>
             <span style={{ fontSize:12, color:MUTED, fontFamily:"'DM Mono',monospace" }}>
-              Generated by AI
+              Version {rec.data.version || 1}
             </span>
           </div>
         </div>

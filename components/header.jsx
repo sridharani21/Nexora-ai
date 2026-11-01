@@ -10,7 +10,7 @@ import { checkUser } from '@/lib/CheckUser'
 
 
 const Header = async () => {
-    try { await checkUser(); } catch (e) {}
+    await checkUser();
     return (
         <header className="fixed top-0 w-full border-b bg-background/80 backdrop-blur-md z-50 supports-[backdrop-filter]:bg-background/60 ">
             <nav className="container mx-auto px-4 h-16 flex items-center justify-between  ">
@@ -30,7 +30,7 @@ const Header = async () => {
                             <Button variant="outline">
                                 <LayoutDashboard className="h-4 w-4" />
                                 <span className="hidden md:block">
-                                    Industry Insights
+                                    Dashboard
                                 </span>
                             </Button>
                         </Link>
@@ -60,9 +60,9 @@ const Header = async () => {
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
-                                    <Link href={"/interview"} className="flex items-center gap-2">
+                                    <Link href={"/mock-interview"} className="flex items-center gap-2">
                                         <GraduationCap className="h-4 w-4" />
-                                        <span>Interview Prep</span>
+                                        <span>Module 6 · AI Mock Interview</span>
                                     </Link>
                                 </DropdownMenuItem>
 
@@ -72,6 +72,12 @@ const Header = async () => {
                                         <span>RoadMap Gen</span>
                                     </Link>
                                 </DropdownMenuItem>
+ <DropdownMenuItem>
+     <Link href={"/skill-development/setup"} className="flex items-center gap-2">
+         <GraduationCap className="h-4 w-4" />
+         <span>Career Preparation</span>
+     </Link>
+ </DropdownMenuItem>
 
                                  <DropdownMenuItem>
                                     <Link href={"/course-recommendations"} className="flex items-center gap-2">

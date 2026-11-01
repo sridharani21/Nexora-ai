@@ -1,8 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import { generateText } from "@/lib/ai/ai-provider.js";
+import { isAIProviderUnavailableError } from "@/lib/ai/ai-errors.js";
 
 const BASE_SYSTEM_PROMPT = `You are Nexora's expert Career Guidance AI — sharp, warm, and deeply knowledgeable about careers in tech and beyond.
 
@@ -68,8 +67,8 @@ export async function POST(req) {
 
     // Build Gemini history from DB messages
     const history = session.messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content,
     }));
 
     // Inject resume context if uploaded
@@ -78,10 +77,11 @@ export async function POST(req) {
       systemPrompt += `\n\nThe user has uploaded their resume. Use it as context for all advice:\n\n--- RESUME START ---\n${session.resumeText}\n--- RESUME END ---\n\nRemember: plain text only, no markdown.`;
     }
 
-    const model  = genAI.getGenerativeModel({ model: "gemini-3-flash-preview", systemInstruction: systemPrompt });
-    const chat   = model.startChat({ history });
-    const result = await chat.sendMessage(message);
-    let aiText   = result.response.text();
+    let aiText = await generateText(message, {
+      operation: "career-chat",
+      systemPrompt,
+      history,
+    });
 
     // Strip any markdown that slips through
     aiText = aiText
@@ -113,7 +113,20 @@ export async function POST(req) {
     });
 
   } catch (error) {
-    console.error("Career chat API error:", error);
+    console.error("Career chat API error.", {
+      code: error?.code || null,
+      status: error?.status || null,
+      name: error?.name || "Error",
+    });
+    if (isAIProviderUnavailableError(error) || error?.name === "AbortError") {
+      const message = error?.code === "AI_PROVIDER_QUOTA_EXHAUSTED"
+        ? error.message
+        : "Gemini is temporarily unavailable or rate-limited. Please retry shortly.";
+      return Response.json(
+        { error: message },
+        { status: 503 },
+      );
+    }
     return Response.json({ error: "Failed to get response. Please try again." }, { status: 500 });
   }
 }

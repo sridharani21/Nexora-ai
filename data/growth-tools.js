@@ -51,11 +51,11 @@ export const growthTools = [
     icon: BookOpen,
   },
   {
-    title: "Career Discovery & Learning",
+    title: "Career Explorer",
     description:
-      "From your profile to a weekly plan: career matches, skill gaps, a roadmap, courses, and a learning calendar.",
-    href: "/career-discovery",
-    action: "Start Discovery",
+      "Explore evidence-based career options, compare paths, save your shortlist, and connect to a learning roadmap.",
+    href: "/career-explorer",
+    action: "Explore careers",
     icon: Compass,
   },
   {

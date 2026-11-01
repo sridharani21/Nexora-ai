@@ -10,8 +10,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -37,7 +38,17 @@ model User {
   coverLetter      CoverLetter[]
   roadmaps         Roadmap[]
   careerDiscovery  CareerDiscovery?
-  placementJourney PlacementJourney?
+  profile          UserProfile?
+  module2Attempts  Module2Attempt[]
+  riasecAttempts   RiasecAttempt[]
+  module4Runs      Module4RecommendationRun[]
+  module4SavedCareers Module4SavedCareer[]
+  module4Preferences Module4CareerPreference?
+  module4Goals     Module4CareerGoal[]
+  careerPreparationPlans CareerPreparationPlan[]
+  careerPreparationTasks CareerPreparationTask[]
+  careerPreparationAttempts CareerPreparationAttempt[]
+  mockInterviewSessions MockInterviewSession[]
 }
 
 model Assessment {
@@ -67,6 +78,294 @@ model CoverLetter {
   updatedAt      DateTime @updatedAt
 
   @@index([userId])
+}
+
+model AssessmentQuestion {
+  id                  String   @id
+  contentHash         String   @unique
+  branches            String[] @default([])
+  subject             String
+  topic               String
+  subtopic            String?
+  difficulty          String
+  type                String
+  questionText        String   @db.Text
+  options             Json?
+  answerKey           String?
+  explanation         String?  @db.Text
+  inputFormat         String?  @db.Text
+  outputFormat        String?  @db.Text
+  constraints         String?  @db.Text
+  starterCode         Json?
+  publicTestCases     Json?
+  privateTestCases    Json?
+  supportedLanguages  String[] @default([])
+  marks               Float    @default(1)
+  negativeMarks       Float    @default(0)
+  timeLimitSeconds    Int?
+  memoryLimitMb       Int?
+  sourceTitle         String?
+  sourceUrl           String?
+  languageVersion     String?
+  generationModel     String?
+  validationMetadata  Json?
+  validationStatus    String   @default("GENERATED")
+  isReleased          Boolean  @default(false)
+  contentVersion      Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([validationStatus, isReleased])
+  @@index([subject, topic, difficulty])
+}
+
+model Module2Blueprint {
+  id              String   @id @default(cuid())
+  branch          String
+  version         Int
+  durationMinutes Int
+  maxMarks        Float
+  sections        Json
+  scoringPolicy   Json
+  isActive        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([branch, version])
+  @@index([branch, isActive])
+}
+
+enum Module2AttemptStatus {
+  GENERATING
+  ACTIVE
+  SUBMITTED
+  EXPIRED
+  GENERATION_FAILED
+}
+
+model Module2Attempt {
+  id               String               @id
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch           String
+  blueprintVersion Int
+  blueprint        Json
+  questions        Json?
+  answers          Json                 @default("{}")
+  result           Json?
+  status           Module2AttemptStatus @default(GENERATING)
+  startedAt        DateTime?
+  deadlineAt       DateTime?
+  submittedAt      DateTime?
+  completionReason String?
+  cameraConsent    Boolean              @default(false)
+  leaderboardOptIn Boolean              @default(false)
+  questionTime     Json                 @default("{}")
+  cooldownUntil    DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  integrityEvents  Module2IntegrityEvent[]
+  codingSubmissions Module2CodingSubmission[]
+
+  @@index([userId, createdAt])
+  @@index([userId, cooldownUntil])
+  @@index([status, deadlineAt])
+}
+
+model Module2QuestionSetCache {
+  id              String   @id
+  branch          String
+  blueprintVersion Int
+  questions       Json
+  createdAt       DateTime @default(now())
+
+  @@index([branch, blueprintVersion, createdAt])
+}
+
+enum RiasecAttemptStatus {
+  IN_PROGRESS
+  COMPLETE
+}
+
+model RiasecAttempt {
+  id                    String              @id @default(uuid())
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                RiasecAttemptStatus @default(IN_PROGRESS)
+  questionSetVersion    Int                 @default(1)
+  scoringAlgorithmVersion Int               @default(1)
+  questions             Json
+  responses             Json                @default("{}")
+  scores                Json?
+  interestCode          String?
+  interpretation        String?             @db.Text
+  completedAt           DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([userId, status, createdAt])
+}
+
+model Module4Career {
+  id                String                     @id @default(uuid())
+  slug              String                     @unique
+  title             String
+  family            String
+  domain            String
+  summary           String                     @db.Text
+  description       String                     @db.Text
+  responsibilities  Json
+  workEnvironments  Json
+  entryLevelRoles   Json
+  tools             Json
+  educationThemes   Json
+  projectIdeas      Json
+  learningResources Json                     @default("[]")
+  competencyProgression Json                   @default("{}")
+  qualifications    Json
+  interestDimensions String[]
+  technicalTopics   String[]
+  adjacentSlugs     String[]
+  sources           Json
+  reviewedAt        DateTime
+  isActive          Boolean                    @default(true)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  skillRequirements Module4CareerSkill[]
+  recommendations  Module4CareerRecommendation[]
+  savedBy           Module4SavedCareer[]
+  selectedBy        Module4CareerGoal[]
+  preparationPlans   CareerPreparationPlan[]
+  mockInterviewSessions MockInterviewSession[]
+
+  @@index([family, isActive])
+  @@index([domain, isActive])
+}
+
+model Module4CareerSkill {
+  id          String      @id @default(uuid())
+  careerId    String
+  career      Module4Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  skillName   String
+  normalizedName String
+  importance  String
+  category    String
+  evidenceTopics String[]
+  sourceLabel String
+  createdAt   DateTime    @default(now())
+
+  @@unique([careerId, normalizedName])
+  @@index([normalizedName])
+}
+
+model Module4RecommendationRun {
+  id                  String                       @id @default(uuid())
+  userId              String
+  user                User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rankingMethod       String
+  modelVersion        String
+  featureSchemaVersion String
+  dataSnapshot        Json
+  limitations         Json
+  explanationProvider String
+  createdAt           DateTime                     @default(now())
+  recommendations     Module4CareerRecommendation[]
+
+  @@index([userId, createdAt])
+}
+
+model Module4CareerRecommendation {
+  id        String                    @id @default(uuid())
+  runId     String
+  run       Module4RecommendationRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  careerId  String
+  career    Module4Career             @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  rank      Int
+  evidence  Json
+  explanation String?                 @db.Text
+  createdAt DateTime                  @default(now())
+  selectedGoals Module4CareerGoal[]
+
+  @@unique([runId, careerId])
+  @@unique([runId, rank])
+  @@index([careerId, createdAt])
+}
+
+model Module4SavedCareer {
+  id        String      @id @default(uuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  careerId  String
+  career    Module4Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  notes     String?     @db.Text
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([userId, careerId])
+  @@index([userId, createdAt])
+}
+
+model Module4CareerGoal {
+  id                 String                        @id @default(uuid())
+  userId             String
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  careerId           String
+  career             Module4Career                 @relation(fields: [careerId], references: [id], onDelete: Restrict)
+  recommendationId   String?
+  recommendation     Module4CareerRecommendation?  @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+  skillEvidence      Json
+  skillGaps          Json
+  isCurrent          Boolean                       @default(true)
+  selectedAt         DateTime                      @default(now())
+  endedAt            DateTime?
+  preparationPlans   CareerPreparationPlan[]
+
+  @@index([userId, isCurrent, selectedAt])
+  @@index([careerId, selectedAt])
+  @@index([recommendationId])
+}
+
+model Module4CareerPreference {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles     String[] @default([])
+  domains   String[] @default([])
+  interests String[] @default([])
+  goals     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Module2IntegrityEvent {
+  id                String        @id
+  attemptId         String
+  attempt           Module2Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  eventType         String
+  severity          String
+  clientOccurredAt  DateTime?
+  warningShown      Boolean       @default(false)
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+
+  @@index([attemptId, createdAt])
+}
+
+model Module2CodingSubmission {
+  id         String        @id
+  attemptId  String
+  attempt    Module2Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String
+  language   String
+  sourceCode String        @db.Text
+  mode       String
+  status     String
+  passed     Int?
+  total      Int?
+  evaluation Json?
+  createdAt  DateTime      @default(now())
+
+  @@index([attemptId, questionId, createdAt])
 }
 
 // Combined Industry Trends and Salary Insights
@@ -138,11 +437,13 @@ model Goal {
 model UserProfile {
   id         String   @id @default(cuid())
   userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   skills     String[] @default([])
   interests  String[] @default([])
   education  String?
   experience String?
   targetRole String?
+  profileData Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -343,728 +644,6 @@ model CareerDiscovery {
   @@index([userId])
 }
 
-model PlacementJourney {
-  id                 String                       @id @default(cuid())
-  userId             String                       @unique
-  user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status             String                       @default("profile")
-  currentModule      Int                          @default(1)
-  profile            StudentProfile?
-  careerTwin         CareerTwin?
-  assessmentAttempts PlacementAssessmentAttempt[]
-  readinessReport    PlacementReadinessReport?
-  preparationPlan    PlacementPreparationPlan?
-  practiceAttempts   PracticeAttempt[]
-  createdAt          DateTime                     @default(now())
-  updatedAt          DateTime                     @updatedAt
-}
-
-model PlacementAssessmentAttempt {
-  id                 String           @id @default(cuid())
-  journeyId          String
-  journey            PlacementJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  overallScore       Int
-  sectionScores      Json
-  interestAnswers    Json
-  careerField        String
-  suitabilityProfile Json
-  assessmentType     String   @default("diagnostic")
-  adaptiveDifficulty String   @default("foundation")
-  evidence           Json?
-  completedAt        DateTime         @default(now())
-  createdAt          DateTime         @default(now())
-
-  @@index([journeyId])
-  @@index([journeyId, completedAt])
-}
-
-model CareerTwin {
-  id                    String           @id @default(cuid())
-  journeyId             String           @unique
-  journey               PlacementJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  version               Int              @default(1)
-  currentSkills         Json
-  skillScores           Json
-  interests             Json
-  strengths             Json
-  weaknesses            Json
-  dsaLevel              String           @default("foundation")
-  codingLevel           String           @default("foundation")
-  careerField           String?
-  recommendedRoles      Json
-  alternativeRoles      Json
-  evidence              Json
-  placementReadiness    Int              @default(0)
-  lastAssessmentId      String?
-  updatedAt             DateTime         @updatedAt
-  createdAt             DateTime         @default(now())
-}
-
-model PrepStudentProfile {
-  id                     String                     @id @default(cuid())
-  clerkUserId            String                     @unique
-  email                  String                     @unique
-  fullName               String
-  education              String?
-  skills                 String                     @default("")
-  languages              String                     @default("")
-  projects               String                     @default("")
-  certifications         String                     @default("")
-  interests              String                     @default("")
-  preferredRole          String?
-  targetCompany          String?
-  location               String?
-  preferredDsaLanguage   String                     @default("Python")
-  createdAt              DateTime                   @default(now())
-  updatedAt              DateTime                   @updatedAt
-  assessments            PrepAssessmentAttempt[]
-  generatedQuestionSets  PrepGeneratedQuestionSet[]
-  integrityEvents        PrepAssessmentIntegrityEvent[]
-  readiness              PrepPlacementReadiness?
-  readinessSnapshots     PrepPlacementReadinessSnapshot[]
-  preparationPlans       PrepPreparationPlan[]
-  practiceAttempts       PrepPracticeAttempt[]
-  skillLevels            PrepStudentSkillLevel[]
-  levelHistory           PrepLevelHistory[]
-  dsaProblemProgress     PrepDsaProblemProgress[]
-  dsaActivities           PrepDsaActivity[]
-  companyTargets         PrepCompanyTarget[]
-  companyReadiness       PrepCompanyReadinessSnapshot[]
-  interviewSessions      PrepInterviewSession[]
-  placementSimulations   PlacementSimulation[]
-  learningRoadmaps      PrepLearningRoadmap[]
-  jobApplications        PrepJobApplication[]
-  engagementPreference  PrepEngagementPreference?
-  integrityReviews      PrepIntegrityReview[]
-  pushSubscriptions      PrepWebPushSubscription[]
-  malpracticeAttempts    Int                        @default(0)
-  assessmentLockedUntil  DateTime?
-}
-
-model PrepPlacementReadiness {
-  id                    String           @id @default(cuid())
-  profileId             String           @unique
-  profile               PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  overallReadiness      Int
-  technicalReadiness    Int
-  codingReadiness       Int
-  aptitudeReadiness     Int
-  communicationScore    Int
-  interviewReadiness    Int?
-  resumeReadiness       Int?
-  evidenceCoverage      Int                @default(0)
-  status                String
-  skillProfile          String
-  skillGaps             String
-  careerSuitability     String
-  preparationPriorities String
-  scoreComponents       String             @default("{}")
-  formulaVersion        String             @default("placement-score-v1")
-  sourceAttemptId       String?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-}
-
-model PrepPlacementReadinessSnapshot {
-  id                String            @id @default(cuid())
-  profileId         String
-  profile           PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  overallReadiness  Int
-  formulaVersion    String
-  sourceAttemptId   String?
-  componentScores   String
-  analysisData      String
-  createdAt         DateTime          @default(now())
-
-  @@index([profileId, createdAt])
-}
-
-model PrepPreparationPlan {
-  id                     String                    @id @default(cuid())
-  profileId              String
-  profile                PrepStudentProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  title                  String
-  targetRole             String
-  targetCompany          String?
-  weeklyGoal             String                    @default("")
-  availableMinutesPerDay Int                       @default(120)
-  sequenceId             String?
-  weekNumber             Int                       @default(1)
-  totalWeeks             Int                       @default(1)
-  weekStart              DateTime
-  weekEnd                DateTime
-  estimatedMinutes       Int
-  priorities             String
-  tasks                  PrepPreparationTask[]
-  createdAt              DateTime                  @default(now())
-  updatedAt              DateTime                  @updatedAt
-
-  @@index([profileId, createdAt])
-  @@index([profileId, sequenceId, weekNumber])
-}
-
-model PrepPreparationTask {
-  id            String             @id @default(cuid())
-  planId        String
-  plan          PrepPreparationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  day           Int
-  category      String
-  type          String             @default("LEARNING")
-  topic         String
-  objective     String
-  reason        String             @default("")
-  priority      String             @default("MEDIUM")
-  resource      String?
-  dueDate       DateTime           @default(now())
-  difficulty    String
-  minutes       Int
-  practiceCount Int                @default(0)
-  status        String             @default("NOT_STARTED")
-  completedAt   DateTime?
-  createdAt     DateTime           @default(now())
-
-  @@index([planId, day])
-}
-
-model PrepLearningRoadmap {
-  id              String                  @id @default(cuid())
-  profileId       String
-  profile         PrepStudentProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  title           String
-  targetRole      String
-  targetCompany   String?
-  durationMonths  Int
-  evidenceSummary String                  @db.Text
-  steps           PrepLearningRoadmapStep[]
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-
-  @@index([profileId, createdAt])
-}
-
-model PrepLearningRoadmapStep {
-  id             String               @id @default(cuid())
-  roadmapId      String
-  roadmap        PrepLearningRoadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  order          Int
-  title          String
-  skill          String
-  objective      String                @db.Text
-  reason         String                @db.Text
-  resourceTitle  String
-  resourceUrl    String
-  prerequisiteOrder Int?
-  status         String                @default("NOT_STARTED")
-  dueDate        DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-
-  @@unique([roadmapId, order])
-  @@index([roadmapId, status])
-}
-
-model PrepJobApplication {
-  id               String                  @id @default(cuid())
-  profileId        String
-  profile          PrepStudentProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  jobTitle         String
-  companyName      String
-  location         String?
-  jobUrl           String?
-  jobDescription   String                  @db.Text
-  requiredSkills   String                  @default("[]") @db.Text
-  eligibility      String?
-  eligibilityChecklist String             @default("[]") @db.Text
-  deadline         DateTime?
-  appliedAt        DateTime?
-  status           String                  @default("SAVED")
-  matchScore       Int?
-  matchedSkills    String                  @default("[]") @db.Text
-  missingSkills    String                  @default("[]") @db.Text
-  matchExplanation String                  @default("") @db.Text
-  notes            String                  @default("") @db.Text
-  events           PrepApplicationEvent[]
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
-
-  @@index([profileId, updatedAt])
-  @@index([profileId, status])
-}
-
-model PrepApplicationEvent {
-  id            String             @id @default(cuid())
-  applicationId String
-  application   PrepJobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  fromStatus    String?
-  toStatus      String
-  note          String             @default("")
-  createdAt     DateTime           @default(now())
-
-  @@index([applicationId, createdAt])
-}
-
-model PrepEngagementPreference {
-  id                String             @id @default(cuid())
-  profileId         String             @unique
-  profile           PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  inAppReminders    Boolean            @default(true)
-  reminderFrequency String             @default("DAILY")
-  lastReminderSentAt DateTime?
-  updatedAt         DateTime           @updatedAt
-}
-
-model PrepWebPushSubscription {
-  id                    String             @id @default(cuid())
-  profileId             String
-  profile               PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  endpointHash          String             @unique
-  encryptedSubscription String             @db.Text
-  encryptionIv          String
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-
-  @@index([profileId, updatedAt])
-}
-
-model PrepIntegrityReview {
-  id                String             @id @default(cuid())
-  profileId         String
-  profile           PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  recordType        String
-  recordId          String
-  status            String
-  decisionNote      String             @db.Text
-  reviewerClerkId   String
-  reviewerEmail     String
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-
-  @@index([recordType, recordId, createdAt])
-  @@index([profileId, createdAt])
-}
-
-model PrepAssessmentIntegrityEvent {
-  id        String            @id @default(cuid())
-  profileId String
-  profile   PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  type      String
-  metadata  String            @default("{}")
-  createdAt DateTime          @default(now())
-
-  @@index([profileId, createdAt])
-}
-
-model PrepAssessmentAttempt {
-  id               String            @id @default(cuid())
-  profileId        String
-  profile          PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  overallScore     Int
-  sectionScores    String
-  skillProfile     String
-  strengths        String
-  weaknesses       String
-  careerProfile    String
-  answers          String
-  difficultyMix    String            @default("{}")
-  integrityEvents  String            @default("[]")
-  integrityScore   Int               @default(100)
-  reviewRequired   Boolean           @default(false)
-  questionBankVersion String         @default("diagnostic-v1")
-  completedAt      DateTime          @default(now())
-
-  @@index([profileId, completedAt])
-}
-
-model PrepGeneratedQuestionSet {
-  id        String             @id @default(cuid())
-  profileId String?
-  profile   PrepStudentProfile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  ownerId   String
-  purpose   String
-  questions String             @db.Text
-  createdAt DateTime           @default(now())
-  usedAt    DateTime?
-
-  @@index([profileId, createdAt])
-  @@index([ownerId, createdAt])
-}
-
-model PrepPracticeAttempt {
-  id              String            @id @default(cuid())
-  profileId       String
-  profile         PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  subject         String
-  topic           String
-  mode            String
-  difficulty      String
-  score           Int
-  totalQuestions  Int
-  durationSeconds Int
-  questionIds     String            @default("[]")
-  questionData    String            @default("[]") @db.Text
-  answers         String
-  mistakes        String
-  completedAt     DateTime          @default(now())
-
-  @@index([profileId, completedAt])
-  @@index([profileId, subject])
-}
-
-model PrepStudentSkillLevel {
-  id                     String            @id @default(cuid())
-  profileId              String
-  profile                PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  skill                  String
-  currentLevel           Int               @default(1)
-  levelScore             Int               @default(0)
-  progress               Int               @default(0)
-  recentAccuracy         Int               @default(0)
-  topicCoverage          Int               @default(0)
-  recommendedDifficulty  String            @default("EASY")
-  nextLevelReason        String            @default("")
-  lastEvaluatedAt        DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
-
-  @@unique([profileId, skill])
-  @@index([profileId, updatedAt])
-}
-
-model PrepLevelHistory {
-  id            String            @id @default(cuid())
-  profileId     String
-  profile       PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  skill         String
-  previousLevel Int
-  newLevel      Int
-  reason        String
-  score         Int
-  createdAt     DateTime          @default(now())
-
-  @@index([profileId, skill, createdAt])
-}
-
-model PrepDsaProblemProgress {
-  id                String            @id @default(cuid())
-  profileId         String
-  profile           PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  problemSlug       String
-  title             String
-  url               String
-  topic             String
-  difficulty        String
-  status            String            @default("NOT_STARTED")
-  attemptCount      Int               @default(0)
-  source            String            @default("STUDENT_CONFIRMED")
-  verified          Boolean           @default(false)
-  language          String?
-  firstOpenedAt     DateTime?
-  lastActivityAt    DateTime          @default(now())
-  attemptedAt       DateTime?
-  solvedAt          DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  @@unique([profileId, problemSlug])
-  @@index([profileId, status])
-  @@index([profileId, lastActivityAt])
-}
-
-model PrepDsaActivity {
-  id          String            @id @default(cuid())
-  profileId   String
-  profile     PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  problemSlug String
-  title       String
-  topic       String
-  difficulty  String
-  activityType String
-  source      String
-  verified    Boolean           @default(false)
-  language    String?
-  createdAt   DateTime           @default(now())
-
-  @@index([profileId, createdAt])
-  @@index([profileId, problemSlug])
-}
-
-model PrepCompanyTarget {
-  id                  String                           @id @default(cuid())
-  profileId           String
-  profile             PrepStudentProfile               @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  companyName         String
-  roleKey             String
-  roleLabel           String
-  priority            String                           @default("MEDIUM")
-  status              String                           @default("ACTIVE")
-  requirementsSource String                           @default("GENERAL_ROLE_BENCHMARK")
-  createdAt           DateTime                         @default(now())
-  updatedAt           DateTime                         @updatedAt
-  snapshots           PrepCompanyReadinessSnapshot[]
-
-  @@unique([profileId, companyName, roleKey])
-  @@index([profileId, status, createdAt])
-}
-
-model PrepCompanyReadinessSnapshot {
-  id              String            @id @default(cuid())
-  profileId       String
-  profile         PrepStudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  targetId        String
-  target          PrepCompanyTarget  @relation(fields: [targetId], references: [id], onDelete: Cascade)
-  score           Int?
-  evidenceCoverage Int
-  componentScores String
-  skillGaps       String
-  evidenceSummary String
-  calculatedAt    DateTime          @default(now())
-
-  @@index([profileId, calculatedAt])
-  @@index([targetId, calculatedAt])
-}
-
-model PrepInterviewSession {
-  id                  String                 @id @default(cuid())
-  profileId           String
-  profile             PrepStudentProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  simulationId        String?
-  simulation          PlacementSimulation?   @relation(fields: [simulationId], references: [id], onDelete: SetNull)
-  role                String
-  companyName         String?
-  interviewType       String
-  difficulty          String
-  mode                String                 @default("PRACTICE")
-  voiceEnabled        Boolean                @default(false)
-  monitoringConsent   Boolean                @default(false)
-  transcriptConsentAt DateTime
-  status              String                 @default("ACTIVE")
-  maxQuestions        Int                    @default(8)
-  currentQuestion     Int                    @default(1)
-  reviewRequired      Boolean                @default(false)
-  startedAt           DateTime               @default(now())
-  completedAt         DateTime?
-  updatedAt           DateTime               @updatedAt
-  turns               PrepInterviewTurn[]
-  events              PrepInterviewEvent[]
-  evaluation          PrepInterviewEvaluation?
-
-  @@index([profileId, startedAt])
-  @@index([profileId, status])
-  @@index([simulationId])
-}
-
-model PlacementSimulation {
-  id                String                    @id @default(cuid())
-  profileId         String
-  profile           PrepStudentProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  simulationType    String                    @default("GENERAL")
-  role              String
-  companyName       String?
-  status            String                    @default("ACTIVE")
-  currentStage      Int                       @default(1)
-  totalStages       Int                       @default(3)
-  overallScore      Int?
-  startedAt         DateTime                  @default(now())
-  completedAt       DateTime?
-  stages            SimulationStage[]
-  interviewSessions PrepInterviewSession[]
-
-  @@index([profileId, startedAt])
-  @@index([profileId, status])
-}
-
-model SimulationStage {
-  id                  String              @id @default(cuid())
-  simulationId        String
-  simulation          PlacementSimulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
-  stageKey            String
-  title               String
-  order               Int
-  status              String              @default("LOCKED")
-  timeLimitSeconds    Int
-  score               Int?
-  evidence            String              @default("{}") @db.Text
-  durationSeconds     Int?
-  sourceRecordId      String?
-  startedAt           DateTime?
-  completedAt         DateTime?
-
-  @@unique([simulationId, order])
-  @@unique([simulationId, stageKey])
-  @@index([simulationId, status])
-}
-
-model PrepInterviewTurn {
-  id               String              @id @default(cuid())
-  sessionId        String
-  session          PrepInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sequenceIndex    Int
-  question         String
-  category         String
-  difficulty       String
-  questionSource   String              @default("AI_GENERATED")
-  response         String?             @db.Text
-  responseSeconds  Int?
-  captureMode      String?
-  speakingRateWpm  Int?
-  fillerWordCount  Int?
-  askedAt          DateTime            @default(now())
-  answeredAt       DateTime?
-  evaluation       PrepInterviewAnswerEvaluation?
-
-  @@unique([sessionId, sequenceIndex])
-  @@index([sessionId, askedAt])
-}
-
-model PrepInterviewEvent {
-  id        String              @id @default(cuid())
-  sessionId String
-  session   PrepInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  eventType String
-  source    String
-  details   String              @default("")
-  createdAt DateTime            @default(now())
-
-  @@index([sessionId, createdAt])
-  @@index([sessionId, eventType])
-}
-
-model PrepInterviewEvaluation {
-  id               String                    @id @default(cuid())
-  sessionId        String                    @unique
-  session          PrepInterviewSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  rubricVersion    String
-  overallScore     Int?
-  evidenceCoverage Int
-  dimensionScores String
-  strengths        String
-  improvements     String
-  recommendations String
-  evaluatedAt      DateTime                  @default(now())
-  answerEvaluations PrepInterviewAnswerEvaluation[]
-
-  @@index([evaluatedAt])
-}
-
-model PrepInterviewAnswerEvaluation {
-  id               String                   @id @default(cuid())
-  evaluationId     String
-  evaluation       PrepInterviewEvaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
-  turnId           String                   @unique
-  turn             PrepInterviewTurn        @relation(fields: [turnId], references: [id], onDelete: Cascade)
-  technicalScore   Int?
-  reasoningScore   Int?
-  relevanceScore   Int?
-  structureScore   Int?
-  followUpScore    Int?
-  evidence         String                   @db.Text
-  missingConcepts  String
-  feedback         String                   @db.Text
-
-  @@index([evaluationId])
-}
-
-model StudentProfile {
-  id                   String           @id @default(cuid())
-  journeyId            String           @unique
-  journey              PlacementJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  fullName             String
-  email                String
-  phone                String?
-  educationLevel       String?
-  institution          String?
-  degree               String?
-  graduationYear       Int?
-  cgpa                 String?
-  academicDetails      String?          @db.Text
-  skills               String[]         @default([])
-  programmingLanguages String[]         @default([])
-  projects             Json?
-  certifications       Json?
-  resumeUrl            String?
-  resumeText           String?          @db.Text
-  careerInterests      String[]         @default([])
-  preferredRole        String?
-  targetCompany        String?
-  companyType          String?
-  preferredLocations   String[]         @default([])
-  profileCompleted     Boolean          @default(false)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-}
-
-model PlacementReadinessReport {
-  id              String           @id @default(cuid())
-  journeyId       String           @unique
-  journey         PlacementJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  overallScore    Int
-  skillScores     Json
-  strengths       Json
-  weaknesses      Json
-  skillGaps       Json
-  targetRole      String?
-  targetCompany   String?
-  profileSnapshot Json
-  assessmentId    String?
-  generatedAt     DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model PlacementPreparationPlan {
-  id                 String                     @id @default(cuid())
-  journeyId          String                     @unique
-  journey            PlacementJourney           @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  adaptiveDifficulty String                     @default("foundation")
-  recommendations    Json
-  planData           Json
-  generatedAt        DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
-  tasks              PlacementPreparationTask[]
-}
-
-model PlacementPreparationTask {
-  id          String                   @id @default(cuid())
-  planId      String
-  plan        PlacementPreparationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  day         Int
-  title       String
-  description String                   @db.Text
-  topic       String
-  taskType    String
-  difficulty  String
-  goal        String?
-  completed   Boolean                  @default(false)
-  dueDate     DateTime?
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
-
-  @@index([planId, day])
-}
-
-model PracticeAttempt {
-  id              String           @id @default(cuid())
-  journeyId       String
-  journey         PlacementJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  category        String
-  topic           String
-  mode            String           @default("practice")
-  companyPattern  String?
-  timed           Boolean          @default(false)
-  difficulty      String           @default("adaptive")
-  questionCount   Int
-  correctCount    Int
-  score           Int
-  durationSeconds Int?
-  answers         Json
-  mistakes        Json
-  weakTopics      Json
-  completedAt     DateTime         @default(now())
-  createdAt       DateTime         @default(now())
-
-  @@index([journeyId, completedAt])
-  @@index([journeyId, topic])
-}
-
 model Roadmap {
   id        String   @id @default(cuid())
   userId    String
@@ -1078,6 +657,131 @@ model Roadmap {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model CareerPreparationPlan {
+  id                  String   @id @default(uuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  careerId            String
+  career              Module4Career @relation(fields: [careerId], references: [id], onDelete: Restrict)
+  goalId              String?
+  goal                Module4CareerGoal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  version             Int
+  weeks               Int
+  dailyHours          Float
+  studyDays           Int
+  startDate           DateTime @db.Date
+  skillLevel          String
+  learningPreference  String
+  skillAnalysis       Json
+  weeklyGoals         Json
+  sourceSnapshot      Json
+  status              String   @default("active")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  tasks               CareerPreparationTask[]
+  attempts            CareerPreparationAttempt[]
+
+  @@unique([userId, version])
+  @@index([userId, status, createdAt])
+  @@index([goalId, createdAt])
+}
+
+model CareerPreparationTask {
+  id                  String   @id @default(uuid())
+  planId              String
+  plan                CareerPreparationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekNumber          Int
+  dayNumber           Int
+  scheduledDate       DateTime @db.Date
+  skill               String
+  title               String
+  description         String   @db.Text
+  objectives          Json
+  durationMinutes     Int
+  activity            String   @db.Text
+  completionCriteria  String   @db.Text
+  resources           Json
+  status              String   @default("pending")
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  attempts            CareerPreparationAttempt[]
+
+  @@unique([planId, weekNumber, dayNumber])
+  @@index([userId, status, weekNumber])
+  @@index([planId, weekNumber, dayNumber])
+}
+
+model CareerPreparationAttempt {
+  id                String   @id @default(uuid())
+  submissionKey     String   @unique
+  planId            String
+  plan              CareerPreparationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId            String?
+  task              CareerPreparationTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  kind              String
+  weekNumber        Int
+  attemptNumber     Int
+  questionSnapshot  Json
+  answers           Json
+  score             Float
+  passed            Boolean
+  feedback          Json
+  submittedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  @@index([userId, planId, submittedAt])
+  @@index([planId, kind, weekNumber])
+  @@index([taskId, kind, attemptNumber])
+}
+
+model MockInterviewSession {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  careerId      String
+  career        Module4Career @relation(fields: [careerId], references: [id], onDelete: Restrict)
+  goalId        String?
+  planId        String?
+  careerTitle   String
+  interviewType String
+  difficulty    String
+  duration      Int
+  language      String   @default("English")
+  questions     Json
+  profileSnapshot Json
+  status        String   @default("in_progress")
+  report        Json?
+  overallScore  Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+  answers       MockInterviewAnswer[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status, createdAt])
+  @@index([careerId, createdAt])
+}
+
+model MockInterviewAnswer {
+  id          String   @id @default(uuid())
+  sessionId   String
+  session     MockInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId  String
+  answerText  String   @db.Text
+  evaluation  Json
+  score       Float
+  submittedAt DateTime @default(now())
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId, submittedAt])
 }
 
 enum DemandLevel {

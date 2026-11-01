@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { generateResumeText } from "@/lib/resume-llm";
+import { isAIProviderUnavailableError } from "@/lib/ai/ai-errors.js";
 
 export async function POST(req) {
   try {
@@ -63,10 +64,10 @@ Return ONLY bullet points (one per line with • prefix):`;
     return NextResponse.json({ content });
 
   } catch (error) {
-    console.error("AI generation error:", error);
+    console.error("AI generation error.", { code: error?.code || null, name: error?.name || "Error" });
     return NextResponse.json(
-      { error: "Failed to generate content", details: error.message },
-      { status: 500 }
+      { error: "Gemini is temporarily unavailable or rate-limited. Please try again." },
+      { status: isAIProviderUnavailableError(error) ? 503 : 500 },
     );
   }
 }

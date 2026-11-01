@@ -7,7 +7,7 @@ Nexora AI is a full-stack career development platform. It combines:
 - A web interface for career planning, resumes, interviews, courses, and job preparation.
 - Clerk authentication for sign-in, sign-up, and protected pages.
 - A PostgreSQL database accessed through Prisma.
-- Google Gemini for career advice, resume generation, ATS analysis, quizzes, roadmaps, and recommendations.
+- A centralized server-side AI provider service using the configured Gemini model for career advice, resume generation, ATS analysis, quizzes, roadmaps, and recommendations.
 - Next.js App Router server components, server actions, and route handlers.
 - Inngest for longer-running or asynchronous workflows such as course analysis and resume generation.
 
@@ -97,8 +97,9 @@ components/**/*.jsx         Reusable UI components
 actions/*.js                Server actions for forms and feature workflows
 app/api/**/route.js         HTTP API endpoints and file uploads
 lib/prisma.js               Shared Prisma database client
-lib/llm.js                  General Gemini JSON generation
-lib/resume-llm.js           Resume Gemini text/JSON generation
+lib/ai/                      Central provider selection, errors, retries, and adapters
+lib/llm.js                  Compatibility wrapper for shared structured generation
+lib/resume-llm.js           Compatibility wrapper for resume text/JSON generation
 lib/inngest/*               Background event functions
 prisma/schema.prisma        Database tables and relationships
 proxy.js                    Protected route matching
@@ -277,7 +278,7 @@ Resume export libraries convert the rendered preview into PDF or image output. T
 3. Browser sends POST /api/resumes/analyze-upload.
 4. Server checks Clerk authentication.
 5. Server reads uploaded file bytes.
-6. Gemini extracts plain resume text from the file.
+6. Text-based PDFs are extracted locally; supported images use the centralized multimodal provider service.
 7. Gemini converts the text into structured JSON:
    name, contact data, summary, experience, education, and skills.
 8. ATS analyzer compares the structured resume with the job description.
@@ -521,23 +522,11 @@ Protected route groups include dashboard, resume, cover letter, interview, onboa
 
 ### Artificial intelligence
 
-The project uses Google Gemini through `@google/generative-ai` and also includes `@google/genai`.
+Text and structured generation use `lib/ai/ai-provider.js`, with bounded retries in `lib/ai/ai-fallback.js`. Requests use the configured Gemini model (`GEMINI_MODEL`, default `gemini-3.5-flash-lite`). Responses are parsed and passed through existing feature-specific Zod/business validators before use.
 
-There are two main AI helper paths:
+`lib/llm.js` and `lib/resume-llm.js` remain compatibility wrappers so existing feature logic can use the centralized service without changing workflows. This covers Module 2 assessment generation, Module 3 RIASEC question generation and interpretation, Module 4 evidence-grounded explanations/chat, Module 5 roadmaps and course workflows, Module 6 text question adaptation/evaluation, industry insights, career chat, resume extraction/analysis, ATS fixes, cover letters, and other resume tools.
 
-1. `lib/llm.js`
-   - Uses `GEMINI_API_KEY`.
-   - Provides `generateJson(prompt)`.
-   - Adds an instruction to return JSON, removes markdown fences, and parses the JSON.
-   - Used by the career discovery server actions.
-
-2. `lib/resume-llm.js`
-   - Uses `GEMINI_API_RESUME_KEY`.
-   - Provides text and JSON generation for resume-related functions.
-   - Has a fallback model when the primary resume model is temporarily unavailable.
-   - Used for resume extraction, content improvement, cover letters, and resume tools.
-
-Gemini is called from the server, not directly from browser code. This keeps API keys out of client bundles.
+Gemini Live audio token/WebSocket traffic and Tavus video interviews intentionally retain their provider-specific protocols. Gemini Live is optional; shared text/structured features and Gemini Live both use the same server-side `GEMINI_API_KEY`. Without a Gemini key, mock interviews can still use configured Tavus video or the built-in text question bank, though AI-generated text feedback is unavailable. The Gemini Live key remains server-side; only the existing short-lived session token is returned to its authenticated client.
 
 ### File and document processing
 
@@ -634,7 +623,7 @@ The resume analysis workflow can:
 - Return score, strengths, weaknesses, keywords, section analysis, and recommendations.
 - Apply AI fixes to selected ATS issues.
 
-If Gemini is rate-limited for a PDF upload, the code has a local fallback that extracts PDF text and calculates a simpler report from detected sections and job-description keywords. This means the user can still receive a basic result when AI quota is temporarily exhausted.
+If Gemini is unavailable for a PDF upload, the code has a local fallback that extracts PDF text and calculates a simpler report from detected sections and job-description keywords. This means the user can still receive a basic result during temporary provider outages.
 
 ### AI resume writing tools
 
@@ -835,23 +824,22 @@ setData
 
 It resets errors before a request, stores the result, displays an error toast when the callback fails, and always clears the loading state in `finally`.
 
-### Gemini request flow
+### Centralized AI provider request flow
 
 ```text
 Authenticated server action or API route
     |
     | Build prompt from profile/resume/job data
     v
-GoogleGenerativeAI model.generateContent(...)
+lib/ai/ai-provider.js
     |
-    | Read response.text()
-    | Remove code fences when JSON is expected
-    | JSON.parse(...) or return text
+    | Configured Gemini model -> bounded retry for transient failures
+    | structured output -> parse + feature validator
     v
-Save structured result with Prisma or return it to client
+Existing business logic, persistence, or deterministic fallback
 ```
 
-The prompts often ask for a strict JSON shape. `lib/llm.js` and `lib/resume-llm.js` then clean and parse model output. The application should still treat model output as untrusted input because a model can return invalid or incomplete JSON.
+Provider errors are normalized without logging prompts or credentials. Invalid requests are not retried. Invalid structured output is retried once and rejected rather than saved if it remains invalid.
 
 ### Resume upload flow
 
@@ -969,11 +957,10 @@ The local `.env` file contains credential-shaped values for Clerk, Gemini, datab
 
 ### Reliability
 
-- Gemini calls can fail because of quota limits, model unavailability, malformed JSON, or network errors.
-- Resume AI code has explicit quota/unavailable handling and a local PDF fallback for one path.
+- Provider errors cover quota/rate limits, authentication, invalid requests, temporary service errors, network timeouts, unsupported models, and malformed structured output.
+- Resume AI code has a local PDF extraction/report fallback when providers are unavailable.
 - Inngest is appropriate for work that may exceed a normal request time.
-- JSON responses from Gemini should be validated using Zod or equivalent validation before persistence.
-- The application has several prompt-specific JSON parsers; a shared schema validation layer would make failures safer and easier to diagnose.
+- Structured JSON responses are validated with feature-specific Zod schemas before persistence or use.
 
 ### Data consistency
 
@@ -987,7 +974,7 @@ The local `.env` file contains credential-shaped values for Clerk, Gemini, datab
 - The root `README.md` is still the default create-next-app README and does not describe Nexora AI.
 - `lib/inngest/functions.js` contains large commented-out implementations. The active background behavior should be checked against the deployed Inngest configuration before release.
 - Some dependencies and integrations appear broader than the currently visible route usage. Remove unused packages only after confirming they are not required by hidden or future pages.
-- There are multiple AI model names and two Gemini helper implementations. Centralizing model configuration would make upgrades and fallback behavior more consistent.
+- Gemini Live audio remains a separate protocol from the centralized text/JSON provider service; keep its ephemeral-token model settings distinct from the text model configuration.
 
 ## 11. How to run the project
 

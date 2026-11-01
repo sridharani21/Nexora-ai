@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink, Clock, BarChart, Search } from "lucide-react";
+import { formatCoursePriceInr } from "@/lib/currency";
 
 const platformColors = {
   Coursera: "bg-blue-100 text-blue-700",
@@ -67,7 +68,7 @@ export default function CourseCard({ course, type }) {
             {course.duration}
           </span>
           {type === "paid" && course.price && (
-            <span className="font-semibold text-green-600">{course.price}</span>
+            <span className="font-semibold text-green-600">{formatCoursePriceInr(course.price)}</span>
           )}
           {type === "free" && (
             <span className="font-semibold text-green-600">Free</span>

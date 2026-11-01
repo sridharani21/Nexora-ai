@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { dark } from "@clerk/themes";
 import AppShell from "@/components/AppShell";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata = {
   title: "Nexora AI — Your trusted AI career companion.",
@@ -16,12 +16,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/logo.png" sizes="any" />
       </head>
 
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${inter.className}`}>
         <ClerkProvider appearance={{ baseTheme: dark }}>
           <ThemeProvider
             attribute="class"

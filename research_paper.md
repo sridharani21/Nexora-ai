@@ -4,7 +4,7 @@ S. SriDharani, S. Sharmila, S. Vidhya
 
 Department of Computer Science and Engineering, Hindustan Institute of Technology and Science, Chennai, India
 
-Abstract—Career development and placement preparation are increasingly important in a competitive and rapidly changing job market. Students and early-career professionals often face uncertainty in choosing a suitable career path, understanding skill requirements, preparing resumes, and improving interview readiness. Traditional systems are usually generic, fragmented, and disconnected across different stages of career planning. To address these issues, this paper presents Nexora AI, an AI-driven career guidance and placement preparation platform that integrates career discovery, skill-gap analysis, learning roadmap generation, resume optimization, interview preparation, and placement support into a unified system. The platform is implemented using Next.js, Clerk authentication, Prisma ORM with PostgreSQL, Google Gemini AI, and Inngest background processing. The architecture combines structured user data with generative AI to provide personalized recommendations, evidence-aware readiness evaluation, targeted study planning, and career progression support. In addition to core career guidance features, the system includes newly added placement-preparation modules such as student profile management, diagnostic assessment, skill analysis, adaptive practice, company and role preparation, mock interview evaluation, job matching, application tracking, and progress dashboard monitoring. The proposed system demonstrates how modern full-stack technologies and generative AI can be combined to provide a scalable, practical, and personalized career-support solution.
+Abstract—Career development and placement preparation are increasingly important in a competitive and rapidly changing job market. Students and early-career professionals often face uncertainty in choosing a suitable career path, understanding skill requirements, preparing resumes, and improving interview readiness. Traditional systems are usually generic, fragmented, and disconnected across different stages of career planning. To address these issues, this paper presents Nexora AI, an AI-driven career guidance and placement preparation platform that integrates career discovery, skill-gap analysis, learning roadmap generation, resume optimization, interview preparation, and placement support into a unified system. The platform is implemented using Next.js, Clerk authentication, Prisma ORM with PostgreSQL, Google OpenAI AI, and Inngest background processing. The architecture combines structured user data with generative AI to provide personalized recommendations, evidence-aware readiness evaluation, targeted study planning, and career progression support. In addition to core career guidance features, the system includes newly added placement-preparation modules such as student profile management, diagnostic assessment, skill analysis, adaptive practice, company and role preparation, mock interview evaluation, job matching, application tracking, and progress dashboard monitoring. The proposed system demonstrates how modern full-stack technologies and generative AI can be combined to provide a scalable, practical, and personalized career-support solution.
 
 Index Terms—Artificial Intelligence, Career Guidance, Generative AI, Skill Gap Analysis, Resume Optimization, ATS Analysis, Interview Preparation, Placement Readiness, Personalized Learning, Job Matching.
 
@@ -79,7 +79,7 @@ The system uses Prisma ORM with PostgreSQL for persistent data storage. Data mod
 
 E. AI and Generative Layer
 
-Google Gemini API is used to generate context-aware outputs based on user-specific inputs. The AI component is used to generate career suggestions, learning recommendations, roadmaps, resume drafts, cover letters, skill-gap insights, and interview questions. The model is driven by structured prompts containing user attributes such as education, experience, interests, target role, and skill set.
+OpenAI API is used to generate context-aware outputs based on user-specific inputs. The AI component is used to generate career suggestions, learning recommendations, roadmaps, resume drafts, cover letters, skill-gap insights, and interview questions. The model is driven by structured prompts containing user attributes such as education, experience, interests, target role, and skill set.
 
 F. Background Processing Layer
 
@@ -224,7 +224,7 @@ The project uses a combination of modern technologies suitable for building an A
 - Clerk for authentication and protected route access
 - Prisma ORM for database modeling and queries
 - PostgreSQL for persistent storage
-- Google Gemini AI for content generation and contextual recommendations
+- Google OpenAI AI for content generation and contextual recommendations
 - Inngest for asynchronous workflow orchestration
 - Lucide and modern UI components for professional interface design
 - Document parsing and file-processing utilities for resume analysis
@@ -251,7 +251,7 @@ XI. LIMITATIONS AND CHALLENGES
 
 Although Nexora AI provides a strong modular foundation, it is important to acknowledge its practical limitations. The recommendations depend on the completeness and quality of user-provided data. AI-generated content should be treated as decision-support rather than guaranteed employment outcomes. Readiness scores and role-fit indicators are application-level estimates based on available evidence and should not be viewed as definitive predictions of job success.
 
-The platform also relies on external systems such as Gemini API and browser-based speech and monitoring features. These are valuable but dependent on configuration, browser support, and environment conditions. In addition, live job-data integration, employer-verified benchmark data, and large-scale user studies are still areas for future enhancement.
+The platform also relies on external systems such as OpenAI API and browser-based speech and monitoring features. These are valuable but dependent on configuration, browser support, and environment conditions. In addition, live job-data integration, employer-verified benchmark data, and large-scale user studies are still areas for future enhancement.
 
 XII. CONCLUSION
 

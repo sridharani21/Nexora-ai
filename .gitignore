@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -43,6 +44,12 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# Module 4 private training data and locally trained artifacts
+/ml/module4/artifacts/
+/ml/module4/private-data/
+__pycache__/
+*.py[cod]
 
 /lib/generated/prisma
 

@@ -577,7 +577,7 @@ export default function CourseRecommendPage() {
                   <>
                     <Spinner color="#38bdf8" />
                     <span style={{ color: "#38bdf8", fontWeight: 500 }}>
-                      Analyzing your resume with Groq Llama3…
+                      Analyzing your resume with Gemini…
                     </span>
                   </>
                 )}

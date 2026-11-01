@@ -16,23 +16,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { format } from "date-fns";
 
 export default function PerformanceChart({ assessments }) {
-  const [chartData, setChartData] = useState([]);
-
-  useEffect(() => {
-    if (assessments) {
-      const formattedData = assessments.map((assessment, idx) => ({
+  const chartData = useMemo(
+    () => (assessments || []).map((assessment, idx) => ({
         idx,
         date: format(new Date(assessment.createdAt), "MMM dd"),
         score: assessment.quizScore,
         fullDate: format(new Date(assessment.createdAt), "MMM dd, HH:mm"),
-      }));
-      setChartData(formattedData);
-    }
-  }, [assessments]);
+      })),
+    [assessments],
+  );
 
   return (
     <Card>
@@ -42,8 +38,13 @@ export default function PerformanceChart({ assessments }) {
         </CardTitle>
         <CardDescription>Your quiz scores over time</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
+      <CardContent className="min-w-0">
+        <div className="h-[300px] min-w-0 w-full">
+          {!chartData.length ? (
+            <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
+              Complete a practice quiz to see your performance trend.
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -70,15 +71,16 @@ export default function PerformanceChart({ assessments }) {
              <Line
   type="monotone"
   dataKey="score"
-  stroke="#ffffff" // Change this to a visible color like #3b82f6 or #ffffff
+  stroke="#6366f1"
   strokeWidth={2}
   connectNulls={true}
-  dot={{ r: 5, fill: "#ffffff", strokeWidth: 0 }}
+  dot={{ r: 5, fill: "#6366f1", strokeWidth: 0 }}
   activeDot={{ r: 8 }}
   isAnimationActive={true}
 />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>

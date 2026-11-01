@@ -1,12 +1,43 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
+import { z } from "zod";
 import { generateResumeJson } from "@/lib/resume-llm";
-import {
-  getGeminiRetryAfterSeconds,
-  isGeminiQuotaError,
-  isGeminiUnavailableError,
-} from "@/lib/gemini-errors";
+import { isAIProviderUnavailableError } from "@/lib/ai/ai-errors.js";
+
+const resumeToolSchemas = {
+  optimizer: z.object({
+    score: z.number().min(0).max(100),
+    keywords: z.array(z.string()),
+    missingSkills: z.array(z.string()),
+    weakSections: z.array(z.string()),
+    relevantExperience: z.array(z.string()),
+    recommendations: z.array(z.string()),
+    optimizedSummary: z.string(),
+    improvedBullets: z.array(z.string()),
+  }).strict(),
+  matcher: z.object({
+    matches: z.array(z.object({
+      title: z.string().min(1),
+      company: z.string().min(1),
+      matchPercent: z.number().min(0).max(100),
+      matchedSkills: z.array(z.string()),
+      missingSkills: z.array(z.string()),
+      reason: z.string(),
+      nextStep: z.string(),
+    }).strict()).max(5),
+  }).strict(),
+  company: z.object({
+    name: z.string(),
+    overview: z.string(),
+    industry: z.string(),
+    products: z.array(z.string()),
+    commonRoles: z.array(z.string()),
+    requiredSkills: z.array(z.string()),
+    interviewTips: z.array(z.string()),
+    preparationPlan: z.array(z.string()),
+  }).strict(),
+};
 
 async function getUser() {
   const { userId } = await auth();
@@ -59,29 +90,28 @@ COMPANY: ${companyName}`,
       return NextResponse.json({ error: "Invalid resume tool" }, { status: 400 });
     }
 
-    const result = await generateResumeJson(prompts[tool]);
+    const result = await generateResumeJson(prompts[tool], {
+      operation: `resume-tool-${tool}`,
+      validateOutput: (output) => {
+        const parsed = resumeToolSchemas[tool].safeParse(output);
+        return parsed.success ? parsed.data : false;
+      },
+    });
     return NextResponse.json({ result });
   } catch (error) {
-    console.error("Resume tool error:", error);
-    const isQuotaError = isGeminiQuotaError(error);
-    const isUnavailableError = isGeminiUnavailableError(error);
-    const status = isQuotaError ? 429 : isUnavailableError ? 503 : 500;
-    const retryAfter = getGeminiRetryAfterSeconds(error);
+    console.error("Resume tool error.", { code: error?.code || null, name: error?.name || "Error" });
+    const unavailable = isAIProviderUnavailableError(error);
+    const invalidOutput = error?.code === "AI_OUTPUT_INVALID";
+    const status = unavailable ? 503 : invalidOutput ? 502 : 500;
     return NextResponse.json(
       {
-        error: isQuotaError
-          ? "AI quota is temporarily exhausted. Please try again later."
-          : isUnavailableError
-            ? "The resume AI model is temporarily busy. Please try again in a moment."
+        error: unavailable
+          ? "Gemini is temporarily unavailable or rate-limited. Please try again later."
+          : invalidOutput
+            ? "The AI providers returned an invalid response. Please try again."
             : "Unable to complete this request.",
-        ...(status !== 500 ? { retryAfter } : {}),
       },
-      {
-        status,
-        ...(status !== 500
-          ? { headers: { "Retry-After": String(retryAfter) } }
-          : {}),
-      }
+      { status },
     );
   }
 }

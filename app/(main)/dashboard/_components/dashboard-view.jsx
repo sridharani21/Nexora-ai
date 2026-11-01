@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -27,15 +28,22 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { convertAmountToInr, formatInrAmount } from "@/lib/currency";
 
 const DashboardView = ({ insights }) => {
   // Transform salary data for the chart
-  const salaryData = insights.salaryRanges.map((range) => ({
-    name: range.role,
-    min: range.min / 1000,
-    max: range.max / 1000,
-    median: range.median / 1000,
-  }));
+  const salaryData = insights.salaryRanges.map((range) => {
+    const min = convertAmountToInr(range.min, range.currency || "USD");
+    const max = convertAmountToInr(range.max, range.currency || "USD");
+    const median = convertAmountToInr(range.median, range.currency || "USD");
+    return {
+      name: range.role,
+      min: min === null ? null : min / 1000,
+      max: max === null ? null : max / 1000,
+      median: median === null ? null : median / 1000,
+    };
+  }).filter((range) => [range.min, range.max, range.median].every(Number.isFinite));
 
   const getDemandLevelColor = (level) => {
     switch (level.toLowerCase()) {
@@ -75,8 +83,16 @@ const DashboardView = ({ insights }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Badge variant="outline">Last updated: {lastUpdatedDate}</Badge>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/student-profile">
+            <Button variant="outline">Edit Profile</Button>
+          </Link>
+          <Link href="/assessment">
+            <Button>Start Assessment</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Market Overview Cards */}
@@ -148,16 +164,16 @@ const DashboardView = ({ insights }) => {
         <CardHeader>
           <CardTitle>Salary Ranges by Role</CardTitle>
           <CardDescription>
-            Displaying minimum, median, and maximum salaries (in thousands)
+            Annual salary estimates in Indian rupees (₹ thousands)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salaryData}>
+              {salaryData.length ? <BarChart data={salaryData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
+                <YAxis tickFormatter={(value) => `₹${value}K`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
@@ -166,7 +182,7 @@ const DashboardView = ({ insights }) => {
                           <p className="font-medium">{label}</p>
                           {payload.map((item) => (
                             <p key={item.name} className="text-sm">
-                              {item.name}: ${item.value}K
+                              {item.name}: {formatInrAmount(item.value * 1000)}
                             </p>
                           ))}
                         </div>
@@ -175,10 +191,10 @@ const DashboardView = ({ insights }) => {
                     return null;
                   }}
                 />
-                <Bar dataKey="min" fill="#94a3b8" name="Min Salary (K)" />
-                <Bar dataKey="median" fill="#64748b" name="Median Salary (K)" />
-                <Bar dataKey="max" fill="#475569" name="Max Salary (K)" />
-              </BarChart>
+                <Bar dataKey="min" fill="#94a3b8" name="Min Salary (₹K)" />
+                <Bar dataKey="median" fill="#64748b" name="Median Salary (₹K)" />
+                <Bar dataKey="max" fill="#475569" name="Max Salary (₹K)" />
+              </BarChart> : <p className="p-4 text-sm text-muted-foreground">Salary estimates are unavailable until a valid USD-to-INR rate is configured.</p>}
             </ResponsiveContainer>
           </div>
         </CardContent>

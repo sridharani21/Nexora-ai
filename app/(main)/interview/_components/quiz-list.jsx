@@ -27,8 +27,8 @@ export default function QuizList({ assessments }) {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
               <CardTitle className="gradient-title text-3xl md:text-4xl">
                 Recent Quizzes
               </CardTitle>
@@ -43,7 +43,7 @@ export default function QuizList({ assessments }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {assessments?.map((assessment, i) => (
+            {assessments?.length ? assessments.map((assessment, i) => (
               <Card
                 key={assessment.id}
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -53,7 +53,7 @@ export default function QuizList({ assessments }) {
                   <CardTitle className="gradient-title text-2xl">
                     Quiz {i + 1}
                   </CardTitle>
-                  <CardDescription className="flex justify-between w-full">
+                  <CardDescription className="flex w-full flex-wrap justify-between gap-2">
                     <div>Score: {assessment.quizScore.toFixed(1)}%</div>
                     <div>
                       {format(
@@ -71,7 +71,9 @@ export default function QuizList({ assessments }) {
                   </CardContent>
                 )}
               </Card>
-            ))}
+            )) : (
+              <p className="text-sm text-muted-foreground">No practice quizzes yet. Start a quiz to build your interview-preparation history.</p>
+            )}
           </div>
         </CardContent>
       </Card>

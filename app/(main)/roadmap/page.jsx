@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { toPng } from "html-to-image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 const ACCENT  = "#6ee7b7";
@@ -23,30 +23,59 @@ const MONTH_COLORS = [
   { ring:"#34d399", glow:"#34d39920", label:"#34d399" },
 ];
 
-const W = { maxWidth:1100, width:"100%", margin:"0 auto", padding:"0 32px" };
+const W = { maxWidth:1100, width:"100%", margin:"0 auto", padding:"0 clamp(12px, 4vw, 32px)" };
 
-export default function RoadmapPage() {
+function RoadmapContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [career,  setCareer]  = useState("");
+  const [careerId, setCareerId] = useState("");
+  const [goalId, setGoalId] = useState("");
+  const [skillGaps, setSkillGaps] = useState([]);
   const [months,  setMonths]  = useState(3);
   const [roadmap, setRoadmap] = useState(null);
+  const [learningResources, setLearningResources] = useState([]);
+  const [skillEvidence, setSkillEvidence] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState("");
   const roadmapRef = useRef(null);
 
+  useEffect(() => {
+    const selectedCareer = searchParams.get("career");
+    const selectedCareerId = searchParams.get("careerId");
+    const selectedGoalId = searchParams.get("goalId");
+    const selectedSkills = searchParams.get("skills");
+    const selectedMonths = Number(searchParams.get("months"));
+    setCareer(selectedCareer?.slice(0, 120) || "");
+    setCareerId(selectedCareerId || "");
+    setGoalId(selectedGoalId || "");
+    setSkillGaps(selectedSkills ? selectedSkills.split(",").map((skill) => skill.trim()).filter(Boolean).slice(0, 20) : []);
+    setMonths(Number.isInteger(selectedMonths) && selectedMonths >= 1 && selectedMonths <= 12 ? selectedMonths : 3);
+  }, [searchParams]);
+
   const generateRoadmap = async () => {
     if (!career.trim()) return;
-    setLoading(true); setRoadmap(null); setError("");
+    setLoading(true); setRoadmap(null); setLearningResources([]); setSkillEvidence([]); setError("");
     try {
       const res  = await fetch("/api/roadmap", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ career, months }),
+        body: JSON.stringify({
+          career,
+          careerId: careerId || undefined,
+          goalId: goalId || undefined,
+          months,
+          skillGaps,
+        }),
       });
       const data = await res.json();
-      if (data.error) setError(data.error);
-      else setRoadmap(data.roadmap);
+      if (!res.ok || data.error) setError(data.error || "Unable to build this learning plan. Please try again.");
+      else {
+        setRoadmap(data.roadmap);
+        setLearningResources(Array.isArray(data.learningResources) ? data.learningResources : []);
+        setSkillEvidence(Array.isArray(data.skillEvidence) ? data.skillEvidence : []);
+      }
     } catch { setError("Something went wrong. Please try again."); }
     finally  { setLoading(false); }
   };
@@ -58,7 +87,13 @@ export default function RoadmapPage() {
       const res  = await fetch("/api/roadmap/save", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ career, months, roadmap }),
+        body: JSON.stringify({
+          career,
+          careerId: careerId || undefined,
+          goalId: goalId || undefined,
+          months,
+          roadmap,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -234,7 +269,7 @@ export default function RoadmapPage() {
                 letterSpacing:"0.08em", textTransform:"uppercase",
               }}>
                 <span style={{ width:6, height:6, borderRadius:"50%", background:ACCENT, flexShrink:0 }}/>
-                AI-Powered
+                Career learning plan
               </span>
             </div>
 
@@ -247,7 +282,7 @@ export default function RoadmapPage() {
             </h1>
 
             <p style={{ fontSize:14, color:SUBTEXT, margin:"0 0 28px", maxWidth:440 }}>
-              Get a personalized week-by-week learning plan, then save it to your dashboard
+              Build a focused week-by-week plan from your selected career and skill priorities.
             </p>
 
             {/* Controls */}
@@ -255,11 +290,18 @@ export default function RoadmapPage() {
               <div style={{ flex:"1 1 240px", maxWidth:370 }}>
                 <input className="rmp-input"
                   placeholder="e.g. Full Stack Developer, Data Scientist…"
+                   maxLength={120}
                   value={career}
                   onChange={(e) => setCareer(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && generateRoadmap()}
                 />
               </div>
+
+              {skillGaps.length > 0 && (
+               <p className="rmp-sub" style={{ flexBasis:"100%", margin:0 }}>
+                 Learning priorities from your career profile: {skillGaps.join(", ")}
+               </p>
+              )}
 
               <div style={{ flex:"0 0 134px" }}>
                 <select className="rmp-select" value={months}
@@ -318,6 +360,26 @@ export default function RoadmapPage() {
         {/* ── ROADMAP ──────────────────────────────────────── */}
         {roadmap && (
           <div ref={roadmapRef} style={W}>
+            {careerId && skillGaps.length > 0 && (
+              <section style={{ marginBottom:28, padding:18, border:`1px solid ${BORDER}`, borderRadius:12, background:SURFACE }}>
+                <h2 style={{ margin:"0 0 8px", color:TEXT, fontSize:16 }}>Your learning priorities</h2>
+                <p style={{ margin:0, color:SUBTEXT, fontSize:13, lineHeight:1.6 }}>These skills were identified from your current career goal evidence: {skillGaps.join(", ")}. Listed skills and missing evidence are not treated as proof of ability or inability.</p>
+              </section>
+            )}
+            {careerId && skillEvidence.length > 0 && (
+              <section style={{ marginBottom:28 }}>
+                <h2 style={{ margin:"0 0 12px", color:TEXT, fontSize:16 }}>Career skill evidence</h2>
+                <div style={{ display:"grid", gap:10, gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,230px),1fr))" }}>
+                  {skillEvidence.map((item) => (
+                    <article key={item.skill} style={{ padding:14, border:`1px solid ${BORDER}`, borderRadius:10, background:SURFACE }}>
+                      <strong style={{ display:"block", color:TEXT, fontSize:13 }}>{item.skill}</strong>
+                      <span style={{ display:"block", marginTop:4, color:ACCENT, fontSize:12 }}>{item.status === "Developing" || item.status === "Gap identified" ? "Needs improvement" : item.status || "Not yet assessed"}</span>
+                      {item.evidence?.length > 0 && <p style={{ margin:"6px 0 0", color:SUBTEXT, fontSize:11, lineHeight:1.5 }}>{item.evidence.join(" · ")}</p>}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
             {roadmap.months.map((month, mi) => {
               const col = MONTH_COLORS[mi % MONTH_COLORS.length];
               return (
@@ -381,13 +443,27 @@ export default function RoadmapPage() {
               );
             })}
 
+            {learningResources.length > 0 && (
+              <section style={{ marginTop:24, padding:20, border:`1px solid ${BORDER}`, borderRadius:12, background:SURFACE }}>
+                <h2 style={{ margin:"0 0 12px", color:TEXT, fontSize:18 }}>Learning resource hub</h2>
+                <div style={{ display:"grid", gap:10, gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,240px),1fr))" }}>
+                  {learningResources.map((resource) => (
+                    <a key={`${resource.provider}:${resource.title}`} href={resource.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", padding:14, border:`1px solid ${BORDER}`, borderRadius:10, color:TEXT, textDecoration:"none" }}>
+                      <strong style={{ display:"block", fontSize:14 }}>{resource.title}</strong>
+                      <span style={{ display:"block", marginTop:5, color:SUBTEXT, fontSize:12 }}>{resource.provider} · {resource.type} · {resource.relatedSkill}</span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Footer */}
             <div style={{ paddingTop:22, borderTop:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
               <span style={{ fontSize:12, color:MUTED }}>
                 {career} &middot; {months} month{months>1?"s":""} plan
               </span>
               <span style={{ fontSize:12, color:MUTED, fontFamily:"'DM Mono',monospace" }}>
-                Generated by AI
+                {careerId ? "Career catalogue and your learning priorities" : "Career learning plan"}
               </span>
             </div>
           </div>
@@ -408,6 +484,10 @@ export default function RoadmapPage() {
       </div>
     </>
   );
+}
+
+export default function RoadmapPage() {
+  return <Suspense fallback={<div className="min-h-96" />}><RoadmapContent /></Suspense>;
 }
 
 function RmpSpinner({ color = "#6ee7b7", size = 15 }) {

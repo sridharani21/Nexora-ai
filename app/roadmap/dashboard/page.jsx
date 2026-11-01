@@ -17,7 +17,7 @@ const MONTH_COLORS = [
   "#6ee7b7","#60a5fa","#f472b6","#fbbf24","#a78bfa","#34d399",
 ];
 
-const W = { maxWidth:1100, width:"100%", margin:"0 auto", padding:"0 32px" };
+const W = { maxWidth:1100, width:"100%", margin:"0 auto", padding:"0 clamp(12px, 4vw, 32px)" };
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -170,7 +170,7 @@ export default function RoadmapDashboard() {
 
           {/* Loading skeleton */}
           {loading && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,280px),1fr))", gap:16 }}>
               {[1,2,3].map((i) => (
                 <div key={i} style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, padding:"20px 22px" }}>
                   <div className="rdb-skeleton" style={{ height:14, width:"60%", marginBottom:10 }}/>
@@ -195,7 +195,7 @@ export default function RoadmapDashboard() {
 
           {/* Grid */}
           {!loading && roadmaps.length > 0 && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,280px),1fr))", gap:16 }}>
               {roadmaps.map((r, i) => {
                 const color = MONTH_COLORS[i % MONTH_COLORS.length];
                 return (
@@ -207,7 +207,7 @@ export default function RoadmapDashboard() {
                     <div style={{ width:36, height:4, borderRadius:2, background:color, marginBottom:14 }}/>
 
                     {/* Career title */}
-                    <h3 style={{ fontSize:15, fontWeight:600, color:TEXT, lineHeight:1.3, margin:"0 0 8px" }}>
+                    <h3 style={{ fontSize:15, fontWeight:600, color:TEXT, lineHeight:1.3, margin:"0 0 8px", overflowWrap:"anywhere" }}>
                       {r.career}
                     </h3>
 
@@ -221,6 +221,17 @@ export default function RoadmapDashboard() {
                         {r.months} month{r.months > 1 ? "s" : ""}
                       </span>
                       <span style={{ fontSize:11, color:MUTED }}>{timeAgo(r.createdAt)}</span>
+                    </div>
+
+                    <div style={{ marginBottom:18 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", gap:8, marginBottom:6, color:SUBTEXT, fontSize:11 }}>
+                        <span>Learning tasks</span>
+                        <span>{r.progress?.completed || 0}/{r.progress?.total || 0} · {r.progress?.percentage || 0}%</span>
+                      </div>
+                      <div role="progressbar" aria-label={`${r.career} learning progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.progress?.percentage || 0} style={{ height:6, borderRadius:6, background:BORDER }}>
+                        <div style={{ width:`${r.progress?.percentage || 0}%`, height:"100%", borderRadius:6, background:color }}/>
+                      </div>
+                      {r.progress?.nextTask && <p style={{ margin:"8px 0 0", color:SUBTEXT, fontSize:11 }}>Next: {r.progress.nextTask.title}</p>}
                     </div>
 
                     {/* Footer actions */}

@@ -1,6 +1,6 @@
  "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { onboardingSchema } from "@/app/lib/schema"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,7 +27,7 @@ const OnboardingForm = ({ industries }) => {
     data: updateResult,
   } = useFetch(updateUser);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch} = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, control } = useForm({
     resolver: zodResolver(onboardingSchema),
   })
 
@@ -49,12 +49,11 @@ const OnboardingForm = ({ industries }) => {
    useEffect(() => {
     if (updateResult?.success && !updateLoading) {
       toast.success("Profile completed successfully!");
-      router.push("/dashboard");
-      router.refresh();
+      router.replace("/dashboard");
     }
-  }, [updateResult, updateLoading]);
+  }, [updateResult, updateLoading, router]);
 
-  const watchIndustry = watch("industry");
+  const watchIndustry = useWatch({ control, name: "industry" });
 
   return (
     <div className="flex items-center justify-center bg-background;">

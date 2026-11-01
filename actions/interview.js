@@ -2,14 +2,25 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { z } from "zod";
+import { generateStructuredOutput, generateText } from "@/lib/ai/ai-provider.js";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const quizSchema = z.object({
+  questions: z.array(z.object({
+    question: z.string().trim().min(1),
+    options: z.array(z.string().trim().min(1)).length(4),
+    correctAnswer: z.string().trim().min(1),
+    explanation: z.string().trim().min(1),
+  }).strict()).length(10),
+}).strict().refine((quiz) => quiz.questions.every((question) => (
+  question.options.includes(question.correctAnswer)
+)));
 
-export async function generateQuiz() {
+export async function generateQuiz(targetRole) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
+  const parsedRole = z.string().trim().max(120).safeParse(targetRole || "");
+  if (!parsedRole.success) throw new Error("Interview role is invalid.");
 
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
@@ -22,9 +33,9 @@ export async function generateQuiz() {
   if (!user) throw new Error("User not found");
 
   const prompt = `
-    Generate 10 technical interview questions for a ${
-      user.industry
-    } professional${
+    Generate 10 technical interview questions for a professional exploring the role ${
+      JSON.stringify(parsedRole.data || user.industry || "general")
+    }${
     user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
   }.
     
@@ -44,15 +55,15 @@ export async function generateQuiz() {
   `;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
-    const quiz = JSON.parse(cleanedText);
-
-    return quiz.questions;
+    return await generateStructuredOutput(prompt, {
+      operation: "legacy-interview-quiz",
+      validateOutput: (output) => {
+        const parsed = quizSchema.safeParse(output);
+        return parsed.success ? parsed.data.questions : false;
+      },
+    });
   } catch (error) {
-    console.error("Error generating quiz:", error);
+    console.error("Error generating quiz.", { code: error?.code || null, name: error?.name || "Error" });
     throw new Error("Failed to generate quiz questions");
   }
 }
@@ -100,10 +111,9 @@ export async function saveQuizResult(questions, answers, score) {
     `;
 
     try {
-      const tipResult = await model.generateContent(improvementPrompt);
-
-      improvementTip = tipResult.response.text().trim();
-      console.log(improvementTip);
+      improvementTip = (await generateText(improvementPrompt, {
+        operation: "legacy-interview-improvement-tip",
+      })).trim();
     } catch (error) {
       console.error("Error generating improvement tip:", error);
       // Continue without improvement tip if generation fails

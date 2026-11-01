@@ -4,7 +4,6 @@ import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 const HeroSection = () => {
   const imageRef = useRef(null);
@@ -28,10 +27,10 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="w-full pt-36 md:pt-48 pb-10">
+    <section className="w-full min-w-0 px-4 pb-10 pt-36 md:pt-48">
       <div className="space-y-6 text-center">
         <div className="space-y-6 mx-auto">
-          <h1 className="text-5xl font-bold md:text-6xl lg:text-7xl xl:text-8xl gradient-title animate-gradient">
+          <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl gradient-title animate-gradient">
             Your AI Career Coach for
             <br />
             Professional Success
@@ -40,20 +39,10 @@ const HeroSection = () => {
             From preparation to placement—advance your career with AI-powered guidance and interview support.
           </p>
         </div>
-        <div className="flex justify-center space-x-4">
-          <SignedOut>
-            <SignInButton mode="modal" fallbackRedirectUrl="/placement-prep/dashboard">
-              <Button size="lg" className="px-8">Start Preparation</Button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <Link href="/placement-prep/dashboard">
-              <Button size="lg" className="px-8">Start Preparation</Button>
-            </Link>
-          </SignedIn>
-          <Link href="/dashboard">
+        <div className="flex flex-wrap justify-center gap-4">
+          <Link href="/start-prep">
             <Button size="lg" className="px-8">
-              Get Started
+              Start Prep
             </Button>
           </Link>
           <Link href="">
@@ -62,14 +51,14 @@ const HeroSection = () => {
             </Button>
           </Link>
         </div>
-        <div className="hero-image-wrapper mt-5 md:mt-0">
-          <div ref={imageRef} className="hero-image">
+        <div className="hero-image-wrapper mx-auto mt-5 w-full min-w-0 md:mt-0">
+          <div ref={imageRef} className="hero-image mx-auto w-full max-w-full">
             <Image
               src="/banner.jpeg"
               width={1280}
               height={720}
               alt="Dashboard Preview"
-              className="rounded-lg shadow-2xl border mx-auto"
+              className="mx-auto h-auto w-full rounded-lg border shadow-2xl"
               priority
             />
           </div>
